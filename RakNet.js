@@ -1,6 +1,4 @@
 const RakNet = {
-    VERSION: "1.0.0"
-
     STRUCTURE: 5,
     MAGIC: "00ffff00fefefefefdfdfdfd12345678",
     SERVER_ID: 925686942,

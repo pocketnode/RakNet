@@ -17,7 +17,7 @@ class UnconnectedPong extends Packet {
         options.players.online = options.players.online || 0;
         options.players.max    = options.players.max    || 20;
         options.serverId       = options.serverId       || 536734; // uhh todo--make better?
-        options.gamemode       = options.gamemode       || "Survival";
+        options.gamemode       = options.gamemode       || "Survival"; // is this right?
         
         
         this.name = [
