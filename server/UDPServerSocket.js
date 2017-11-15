@@ -11,12 +11,12 @@ Object.prototype.invert = () => {
     return new_object;
 };
 
-const UnconnectedPing = require("./protocol/UnconnectedPing.js");
-const UnconnectedPong = require("./protocol/UnconnectedPong.js");
-//const OpenConnectionReply1 = require("./protocol/OpenConnectionReply1");
-//const OpenConnectionReply2 = require("./protocol/OpenConnectionReply2");
-//const OpenConnectionRequest1 = require("./protocol/OpenConnectionRequest1");
-//const OpenConnectionRequest2 = require("./protocol/OpenConnectionRequest2");
+const UnconnectedPing = require("../protocol/UnconnectedPing.js");
+const UnconnectedPong = require("../protocol/UnconnectedPong.js");
+//const OpenConnectionReply1 = require("../protocol/OpenConnectionReply1");
+//const OpenConnectionReply2 = require("../protocol/OpenConnectionReply2");
+//const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
+//const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
 
 class UDPServerSocket {
     constructor(server, port, logger){
