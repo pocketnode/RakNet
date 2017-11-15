@@ -1,6 +1,6 @@
 const ByteBuffer = require("bytebuffer");
 const dgram = require("dgram");
-const RakNet = require("./RakNet.js");
+const RakNet = require("../RakNet.js");
 
 Object.prototype.invert = () => {
     var object = this.valueOf();
