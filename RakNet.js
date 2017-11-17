@@ -35,4 +35,4 @@ const RakNet = {
     ACK : 0xc0
 }
 
-module.exports = RakNet;
+exports = RakNet;

@@ -58,7 +58,7 @@ class UDPServerSocket {
                         protocol: 130,
                         version: "1.2.3",
                         players: {
-                            online: this.PocketNodeServer.getOnlinePlayers().length,
+                            online: this.PocketNodeServer.getOnlinePlayerCount(),
                             max: this.PocketNodeServer.getMaxPlayers()
                         },
                         serverId: this.PocketNodeServer.serverId
