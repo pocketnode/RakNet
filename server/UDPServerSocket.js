@@ -3,9 +3,9 @@ const dgram = require("dgram");
 const RakNet = require("../RakNet.js");
 
 Object.prototype.invert = () => {
-    var object = this.valueOf();
-    var new_object = {};
-    for(var key in object){
+    let object = this.valueOf();
+    let new_object = {};
+    for(let key in object){
         new_object[object[key]] = key;
     }
     return new_object;
@@ -45,23 +45,23 @@ class UDPServerSocket {
     }
 
     onmessage(msg, rinfo) {
-        var buf = new ByteBuffer().append(msg, "hex");
-        var id = buf.buffer[0];
+        var buffer = new ByteBuffer().append(msg, "hex");
+        var id = buffer.buffer[0];
         if(id >= RakNet.UNCONNECTED_PING && id <= RakNet.ADVERTISE_SYSTEM){
             this.logger.debug("Got "+this.raknet_names[id]+" Packet. Hex: "+msg);
             switch(id){
                 case RakNet.UNCONNECTED_PING:
-                    var request = new UnconnectedPing(buf);
+                    let request = new UnconnectedPing(buffer);
                     request.decode();
-                    var response = new UnconnectedPong(request.pingId, {
+                    let response = new UnconnectedPong(request.pingId, {
                         name: this.PocketNodeServer.getMotd(),
                         protocol: 130,
-                        version: "1.2.3",
+                        version: this.PocketNodeServer.getVersion(),
                         players: {
                             online: this.PocketNodeServer.getOnlinePlayerCount(),
                             max: this.PocketNodeServer.getMaxPlayers()
                         },
-                        serverId: this.PocketNodeServer.serverId
+                        serverId: this.PocketNodeServer.getServerId()
                     });
                     response.encode();
                     this.send(response.bb.buffer, 0, response.bb.buffer.length, rinfo.port, rinfo.address); //Send waiting data buffer
@@ -71,20 +71,8 @@ class UDPServerSocket {
                     this.logger.notice("Unknown RakNet packet. Id: "+id);
                     break;
             }
-        }else if(id >= RakNet.DATA_PACKET_0 &&  id <= RakNet.DATA_PACKET_F){
-            for(var i = 0; i < this.players.length; i++){
-                if(this.players[i].ip == rinfo.address && this.players[i].port == rinfo.port){
-                    var e = new EncapsulatedPacket(buf);
-                    e.decode();
-                    this.players[i].handlePackets(e);
-                    return;
-                }
-            }
-            console.log("Couldn't find a player.")
-        }else if(id == RakNet.ACK || id == RakNet.NACK){
-            console.log("Got the ACK");
         }else{
-            console.log("Unknown packet: " + id);
+            this.logger.notice("Received unknown packet: " + id);
         }
     }
 }
