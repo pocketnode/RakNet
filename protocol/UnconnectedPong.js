@@ -1,10 +1,11 @@
 const ByteBuffer = require("bytebuffer");
-const Packet = require("./Packet.js");
-const MessageIdentifiers = require("./MessageIdentifiers.js");
 
-class UnconnectedPong extends Packet {
+const OfflineMessage = require("./OfflineMessage");
+const MessageIdentifiers = require("./MessageIdentifiers");
+
+class UnconnectedPong extends OfflineMessage {
     static getId(){
-        return MessageIdentifiers.UnconnectedPong;
+        return MessageIdentifiers.ID_UNCONNECTED_PONG;
     }
 
     constructor(pingId, options){
@@ -16,7 +17,7 @@ class UnconnectedPong extends Packet {
         options.version        = options.version        || "0.14.0";
         options.players.online = options.players.online || 0;
         options.players.max    = options.players.max    || 20;
-        options.serverId       = options.serverId       || 536734; // uhh todo--make better?
+        this.serverId          = options.serverId       || 536734; // uhh todo--make better?
         options.gamemode       = options.gamemode       || "Survival"; // is this right?
         
         
@@ -30,20 +31,24 @@ class UnconnectedPong extends Packet {
             "PocketNode",
             options.gamemode
         ].join(";");
-        this.bb = new ByteBuffer();
-        this.bb.buffer[0] = this.raknet.UNCONNECTED_PONG;
-        this.bb.offset = 1;
+
+        this.buffer = new ByteBuffer();
+        this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_UNCONNECTED_PONG;
+        this.getByteBuffer().offset = 1;
     }
     
     encode(){
-        this.bb.
-            writeLong(this.pingId).
-            writeLong(this.raknet.SERVER_ID).
-            append(this.raknet.MAGIC, "hex").
-            writeShort(this.name.length).
-            writeString(this.name).
-            flip().
-            compact();
+        this.getByteBuffer()
+            .writeLong(this.pingId)
+            .writeLong(this.serverId);
+
+        this.writeMagic();
+
+        this.getByteBuffer()
+            .writeShort(this.name.length)
+            .writeString(this.name)
+            .flip()
+            .compact();
     }
 }
 

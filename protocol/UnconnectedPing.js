@@ -1,22 +1,22 @@
-const Packet = require("./Packet.js");
-const MessageIdentifiers = require("./MessageIdentifiers.js");
+const Packet = require("./Packet");
+const MessageIdentifiers = require("./MessageIdentifiers");
 
 class UnconnectedPing extends Packet {
     static getId(){
-        return MessageIdentifiers.UnconnectedPing;
+        return MessageIdentifiers.ID_UNCONNECTED_PING;
     }
 
     constructor(buffer){
         super();
 
         this.pingId = -1;
-        this.bb = buffer;
-        this.bb.offset = 1;
+        this.buffer = buffer;
+        this.getByteBuffer().offset = 1;
     }
 
     decode(){
-        this.pingId = this.bb.readLong();
-        this.bb.flip();
+        this.pingId = this.getByteBuffer().readLong();
+        this.getByteBuffer().flip();
     }
 }
 

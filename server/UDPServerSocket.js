@@ -1,28 +1,18 @@
 const ByteBuffer = require("bytebuffer");
 const dgram = require("dgram");
-const RakNet = require("../RakNet.js");
+const MessageIdentifiers = require("../protocol/MessageIdentifiers");
+const MessageIdentifierNames = (require("invert-kv"))(MessageIdentifiers);
 
-Object.prototype.invert = () => {
-    let object = this.valueOf();
-    let new_object = {};
-    for(let key in object){
-        new_object[object[key]] = key;
-    }
-    return new_object;
-};
-
-const UnconnectedPing = require("../protocol/UnconnectedPing.js");
-const UnconnectedPong = require("../protocol/UnconnectedPong.js");
-//const OpenConnectionReply1 = require("../protocol/OpenConnectionReply1");
-//const OpenConnectionReply2 = require("../protocol/OpenConnectionReply2");
-//const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
-//const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
+const UnconnectedPing = require("../protocol/UnconnectedPing");
+const UnconnectedPong = require("../protocol/UnconnectedPong");
+const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
+const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
+const OpenConnectionReply1 = require("../protocol/OpenConnectionReply1");
+const OpenConnectionReply2 = require("../protocol/OpenConnectionReply2");
 
 class UDPServerSocket {
     constructor(server, port, logger){
         this.server = dgram.createSocket("udp4");
-        this.server.raknet = RakNet;
-        this.server.raknet_names = RakNet.invert();
         this.server.PocketNodeServer = server;
         this.server.logger = logger;
         this.setListeners();
@@ -36,7 +26,7 @@ class UDPServerSocket {
     }
 
     onlistening(){
-        this.logger.info("Raknet Server Started!");
+        this.logger.info("RakNet Server Started!");
     }
 
     onerror(err){
@@ -45,17 +35,18 @@ class UDPServerSocket {
     }
 
     onmessage(msg, rinfo) {
-        var buffer = new ByteBuffer().append(msg, "hex");
-        var id = buffer.buffer[0];
-        if(id >= RakNet.UNCONNECTED_PING && id <= RakNet.ADVERTISE_SYSTEM){
-            this.logger.debug("Got "+this.raknet_names[id]+" Packet. Hex: "+msg);
+        let buffer = new ByteBuffer().append(msg, "hex");
+        let id = buffer.buffer[0];
+        if(id >= MessageIdentifiers.ID_UNCONNECTED_PING && id <= MessageIdentifiers.ID_ADVERTISE_SYSTEM){
+            this.logger.debug("Got "+MessageIdentifierNames[id]+" Packet. Hex: "+msg);
+            let request, response;
             switch(id){
-                case RakNet.UNCONNECTED_PING:
-                    let request = new UnconnectedPing(buffer);
+                case UnconnectedPing.getId():
+                    request = new UnconnectedPing(buffer);
                     request.decode();
-                    let response = new UnconnectedPong(request.pingId, {
+                    response = new UnconnectedPong(request.pingId, {
                         name: this.PocketNodeServer.getMotd(),
-                        protocol: 130,
+                        protocol: this.PocketNodeServer.getProtocol(),
                         version: this.PocketNodeServer.getVersion(),
                         players: {
                             online: this.PocketNodeServer.getOnlinePlayerCount(),
@@ -64,15 +55,45 @@ class UDPServerSocket {
                         serverId: this.PocketNodeServer.getServerId()
                     });
                     response.encode();
-                    this.send(response.bb.buffer, 0, response.bb.buffer.length, rinfo.port, rinfo.address); //Send waiting data buffer
+                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
+                    break;
+
+                case OpenConnectionRequest1.getId():
+                    request = new OpenConnectionRequest1(buffer);
+                    request.decode();
+
+                    response = new OpenConnectionReply1(request.mtuSize, {
+                        serverId: this.PocketNodeServer.getServerId(),
+                        serverSecurity: this.PocketNodeServer.requiresAuthentication()
+                    });
+                    response.encode();
+                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
+                    break;
+
+                case OpenConnectionRequest2.getId():
+                    request = new OpenConnectionRequest2(buffer);
+                    request.decode();
+
+                    response = new OpenConnectionReply2(request.mtuSize, {
+                        ip: rinfo.address,
+                        port: rinfo.port
+                    }, {
+                        serverId: this.PocketNodeServer.getServerId(),
+                        serverSecurity: this.PocketNodeServer.requiresAuthentication()
+                    });
+                    response.encode();
+                    //console.log("BUFFER:", respon)
+                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
                     break;
 
                 default:
-                    this.logger.notice("Unknown RakNet packet. Id: "+id);
+                    this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
                     break;
             }
+        }else if(MessageIdentifiers[id] != null){
+            this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
         }else{
-            this.logger.notice("Received unknown packet: " + id);
+            this.logger.notice("Received unknown packet. Id: " + id);
         }
     }
 }

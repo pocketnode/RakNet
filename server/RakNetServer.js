@@ -1,4 +1,4 @@
-const UDPServerSocket = require("./UDPServerSocket.js");
+const UDPServerSocket = require("./UDPServerSocket");
 
 class RakNetServer {
     constructor(Server){
