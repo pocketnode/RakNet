@@ -90,7 +90,7 @@ class UDPServerSocket {
                     this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
                     break;
             }
-        }else if(MessageIdentifiers[id] != null){
+        }else if(MessageIdentifiersNames[id] != null){
             this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
         }else{
             this.logger.notice("Received unknown packet. Id: " + id);
