@@ -12,8 +12,8 @@ class SessionManager {
         this.UDPSocketServer = server;
     }
 
-    createSession(address, port){
-        let session = new Session(address, port);
+    createSession(address, port, clientId, mtuSize){
+        let session = new Session(address, port, clientId, mtuSize);
         this.sessions.set(address + ":" + port, session);
         return session;
     }

@@ -1,7 +1,7 @@
 const UDPServerSocket = require("./UDPServerSocket");
 
 class RakNetServer {
-    constructor(Server){
+    constructor(Server, Logger){
         new UDPServerSocket(Server, Server.getPort(), Server.getLogger());
     }
 }

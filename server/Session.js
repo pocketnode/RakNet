@@ -1,20 +1,31 @@
+const SessionState = {
+    CONNECTING: 0,
+    CONNECTED: 1,
+    DISCONNECTING: 2,
+    DISCONNECTED: 3
+};
+
 class Session {
     initVars(){
-        this.clientId = -1;
         this.address = "";
         this.port = -1;
-        this.opened = false;
-        this.connected = false;
-        this.currentSequenceNumber = 0;
+        this.clientId = -1;
+
+        this.state = SessionState.CONNECTING;
+
         this.mtuSize = -1;
+
+        this.currentSequenceNumber = 0;
         this.packets = [];
         this.sentPackets = [];
     }
 
-    constructor(address, port){
+    constructor(address, port, clientId, mtuSize){
         this.initVars();
         this.address = address;
         this.port = port;
+        this.clientId = clientId;
+        this.mtuSize = mtuSize;
     }
 
     open(){
@@ -47,7 +58,7 @@ class Session {
     }
 
     setConnected(tf){
-        this.connected = (tf ? true : false);
+        this.connected = !!tf;
     }
 
     isConnected(){
