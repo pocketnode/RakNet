@@ -1,4 +1,5 @@
 const Session = require("./Session");
+const OfflineMessageHandler = require("./OfflineMessageHandler");
 
 class SessionManager {
     initVars(){

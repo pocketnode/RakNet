@@ -53,10 +53,6 @@ class Session {
         this.clientId = id;
     }
 
-    isOpened(){
-        return this.opened;
-    }
-
     setConnected(tf){
         this.connected = !!tf;
     }
@@ -68,8 +64,6 @@ class Session {
     isStackEmpty(){
         return this.packets.length === 0;
     }
-
-
 }
 
 module.exports = Session;

@@ -82,7 +82,6 @@ class UDPServerSocket {
                         serverSecurity: this.PocketNodeServer.requiresAuthentication()
                     });
                     response.encode();
-                    //console.log("BUFFER:", respon)
                     this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
                     break;
 
@@ -90,7 +89,7 @@ class UDPServerSocket {
                     this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
                     break;
             }
-        }else if(MessageIdentifierNames[id] != null){
+        }else if(typeof MessageIdentifierNames[id] !== "undefined"){
             this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
         }else{
             this.logger.notice("Received unknown packet. Id: " + id);
