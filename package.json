@@ -20,5 +20,9 @@
   "bugs": {
     "url": "https://github.com/PocketNode/RakNet/issues"
   },
-  "homepage": "https://github.com/PocketNode/RakNet#readme"
+  "homepage": "https://github.com/PocketNode/RakNet#readme",
+  "dependencies": {
+    "bytebuffer": "^5.0.1",
+    "dgram": "^1.0.1"
+  }
 }
