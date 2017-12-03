@@ -1,0 +1,24 @@
+{
+  "name": "raknet",
+  "version": "1.0.0",
+  "description": "raknet implementation in node.js",
+  "main": "server/RakNetServer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PocketNode/RakNet.git"
+  },
+  "keywords": [
+    "raknet",
+    "raknet-node",
+    "pocketnode"
+  ],
+  "author": "eDroid",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/PocketNode/RakNet/issues"
+  },
+  "homepage": "https://github.com/PocketNode/RakNet#readme"
+}
