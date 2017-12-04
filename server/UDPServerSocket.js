@@ -12,88 +12,83 @@ const OpenConnectionReply2 = require("../protocol/OpenConnectionReply2");
 
 class UDPServerSocket {
     constructor(server, port, logger){
-        this.server = dgram.createSocket("udp4");
-        this.server.PocketNodeServer = server;
-        this.server.logger = logger;
+        this.socket = dgram.createSocket("udp4");
+        this.socket.PocketNodeServer = server;
+        this.socket.logger = logger;
         this.setListeners();
-        this.server.bind(port);
+        this.socket.bind(port);
+    }
+    
+    getSocket(){
+        return this.socket;
     }
 
     setListeners(){
-        this.server.on("error", this.onerror);
-        this.server.on("message", this.onmessage);
-        this.server.on("listening", this.onlistening);
-    }
+        this.socket.on("error", err => {
+            this.logger.error("UDPSocketServer Error:", err);
+            this.close();
+        });
+        this.socket.on("message", (msg, rinfo) => {
+            let buffer = new ByteBuffer().append(msg, "hex");
+            let id = buffer.buffer[0];
+            if(id >= MessageIdentifiers.ID_UNCONNECTED_PING && id <= MessageIdentifiers.ID_ADVERTISE_SYSTEM){
+                this.logger.debug("Got "+MessageIdentifierNames[id]+" Packet. Hex: "+msg);
+                let request, response;
+                switch(id){
+                    case UnconnectedPing.getId():
+                        request = new UnconnectedPing(buffer);
+                        request.decode();
+                        response = new UnconnectedPong(request.pingId, {
+                            name: this.PocketNodeServer.getMotd(),
+                            protocol: this.PocketNodeServer.getProtocol(),
+                            version: this.PocketNodeServer.getVersion(),
+                            players: {
+                                online: this.PocketNodeServer.getOnlinePlayerCount(),
+                                max: this.PocketNodeServer.getMaxPlayers()
+                            },
+                            serverId: this.PocketNodeServer.getServerId()
+                        });
+                        response.encode();
+                        this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
+                        break;
 
-    onlistening(){
-        this.logger.info("RakNet Server Started!");
-    }
+                    case OpenConnectionRequest1.getId():
+                        request = new OpenConnectionRequest1(buffer);
+                        request.decode();
 
-    onerror(err){
-        this.logger.error("UDPSocketServer Error: " + err);
-        this.close();
-    }
+                        response = new OpenConnectionReply1(request.mtuSize, {
+                            serverId: this.PocketNodeServer.getServerId(),
+                            serverSecurity: this.PocketNodeServer.requiresAuthentication()
+                        });
+                        response.encode();
+                        this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
+                        break;
 
-    onmessage(msg, rinfo) {
-        let buffer = new ByteBuffer().append(msg, "hex");
-        let id = buffer.buffer[0];
-        if(id >= MessageIdentifiers.ID_UNCONNECTED_PING && id <= MessageIdentifiers.ID_ADVERTISE_SYSTEM){
-            this.logger.debug("Got "+MessageIdentifierNames[id]+" Packet. Hex: "+msg);
-            let request, response;
-            switch(id){
-                case UnconnectedPing.getId():
-                    request = new UnconnectedPing(buffer);
-                    request.decode();
-                    response = new UnconnectedPong(request.pingId, {
-                        name: this.PocketNodeServer.getMotd(),
-                        protocol: this.PocketNodeServer.getProtocol(),
-                        version: this.PocketNodeServer.getVersion(),
-                        players: {
-                            online: this.PocketNodeServer.getOnlinePlayerCount(),
-                            max: this.PocketNodeServer.getMaxPlayers()
-                        },
-                        serverId: this.PocketNodeServer.getServerId()
-                    });
-                    response.encode();
-                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
-                    break;
+                    case OpenConnectionRequest2.getId():
+                        request = new OpenConnectionRequest2(buffer);
+                        request.decode();
 
-                case OpenConnectionRequest1.getId():
-                    request = new OpenConnectionRequest1(buffer);
-                    request.decode();
+                        response = new OpenConnectionReply2(request.mtuSize, {
+                            ip: rinfo.address,
+                            port: rinfo.port
+                        }, {
+                            serverId: this.PocketNodeServer.getServerId(),
+                            serverSecurity: this.PocketNodeServer.requiresAuthentication()
+                        });
+                        response.encode();
+                        this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
+                        break;
 
-                    response = new OpenConnectionReply1(request.mtuSize, {
-                        serverId: this.PocketNodeServer.getServerId(),
-                        serverSecurity: this.PocketNodeServer.requiresAuthentication()
-                    });
-                    response.encode();
-                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
-                    break;
-
-                case OpenConnectionRequest2.getId():
-                    request = new OpenConnectionRequest2(buffer);
-                    request.decode();
-
-                    response = new OpenConnectionReply2(request.mtuSize, {
-                        ip: rinfo.address,
-                        port: rinfo.port
-                    }, {
-                        serverId: this.PocketNodeServer.getServerId(),
-                        serverSecurity: this.PocketNodeServer.requiresAuthentication()
-                    });
-                    response.encode();
-                    this.send(response.getBuffer(), 0, response.getBuffer().length, rinfo.port, rinfo.address);
-                    break;
-
-                default:
-                    this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
-                    break;
+                    default:
+                        this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
+                        break;
+                }
+            }else if(typeof MessageIdentifierNames[id] !== "undefined"){
+                this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
+            }else{
+                this.logger.notice("Received unknown packet. Id: " + id);
             }
-        }else if(typeof MessageIdentifierNames[id] !== "undefined"){
-            this.logger.notice("Received unhandled packet: " + id + "(" + MessageIdentifierNames[id] + ")");
-        }else{
-            this.logger.notice("Received unknown packet. Id: " + id);
-        }
+        });
     }
 }
 

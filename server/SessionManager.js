@@ -5,6 +5,7 @@ class SessionManager {
     initVars(){
         this.UDPSocketServer = null;
         this.sessions = new Map();
+        this.packetPool = new Map();
     }
 
     constructor(server){
