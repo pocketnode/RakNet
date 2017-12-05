@@ -1,17 +1,64 @@
 const Session = require("./Session");
-//const OfflineMessageHandler = require("./OfflineMessageHandler");
+const TempSession = require("./TempSession");
+
+const OfflineMessage = require("../protocol/OfflineMessage");
+const OfflineMessageHandler = require("./OfflineMessageHandler");
 
 class SessionManager {
     initVars(){
-        this.UDPSocketServer = null;
+        this.server = {};
+        this.socket = {};
+
+        this.bytes = {
+            received: 0,
+            sent: 0
+        };
+
         this.sessions = new Map();
-        this.packetPool = new Map();
+
+        this.offlineMessageHandler = {};
     }
 
-    constructor(server){
+    constructor(server, socket){
+        console.log(server, socket);
         this.initVars();
 
-        this.UDPSocketServer = server;
+        this.server = server;
+        this.socket = socket;
+
+        this.offlineMessageHandler = new OfflineMessageHandler(this);
+    }
+
+    getPort(){
+        return this.server.getPort();
+    }
+
+    getLogger(){
+        return this.server.getLogger();
+    }
+
+    getId(){
+        return this.server.getId();
+    }
+
+    getName(){
+        return {
+            motd: this.server.pocketnode.getMotd(),
+            name: this.server.pocketnode.getName(),
+            protocol: this.server.pocketnode.getProtocol(),
+            version: this.server.pocketnode.getVersion(),
+            players: {
+                online: this.server.pocketnode.getOnlinePlayerCount(),
+                max: this.server.pocketnode.getMaxPlayers()
+            },
+            gamemode: this.server.pocketnode.getGamemodeName(),
+            serverId: this.server.pocketnode.getServerId()
+        };
+    }
+
+    sendPacket(packet, session){
+        packet.encode();
+        this.bytes.sent += this.socket.getSocket().send(packet.getBuffer(), 0, packet.getBuffer().length, session.getPort(), session.getAddress());
     }
 
     createSession(address, port, clientId, mtuSize){
@@ -29,6 +76,19 @@ class SessionManager {
             return this.sessions.get(address + ":" + port);
         }else{
             return false;
+        }
+    }
+
+    handle(packet, tsession){
+        packet.decode();
+        if(packet instanceof OfflineMessage){
+            this.offlineMessageHandler.handle(packet, tsession);
+        }
+    }
+
+    tick(){
+        for(let [,session] of this.sessions){
+            console.log(session)
         }
     }
 }

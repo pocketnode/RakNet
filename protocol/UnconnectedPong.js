@@ -8,29 +8,16 @@ class UnconnectedPong extends OfflineMessage {
         return MessageIdentifiers.ID_UNCONNECTED_PONG;
     }
 
-    constructor(pingId, options){
+    initVars() {
+        this.serverName = {};
+        this.serverId = -1;
+        this.pingId = -1;
+    }
+
+
+    constructor(){
         super();
-        
-        this.pingId = pingId;
-        options.name           = options.name           || "PocketNode Server";
-        options.protocol       = options.protocol       || 137; // 1.2.3
-        options.version        = options.version        || "0.14.0";
-        options.players.online = options.players.online || 0;
-        options.players.max    = options.players.max    || 20;
-        this.serverId          = options.serverId       || 536734; // uhh todo--make better?
-        options.gamemode       = options.gamemode       || "Survival"; // is this right?
-        
-        
-        this.name = [
-            "MCPE",
-            options.name,
-            options.protocol,
-            options.version,
-            options.players.online,
-            options.players.max,
-            "PocketNode",
-            options.gamemode
-        ].join(";");
+        this.initVars();
 
         this.buffer = new ByteBuffer();
         this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_UNCONNECTED_PONG;
@@ -38,6 +25,18 @@ class UnconnectedPong extends OfflineMessage {
     }
     
     encode(){
+        let name = [
+            "MCPE",
+            this.serverName.name,
+            this.serverName.protocol,
+            this.serverName.version,
+            this.serverName.players.online,
+            this.serverName.players.max,
+            this.serverName.serverId,
+            this.serverName.motd,
+            this.serverName.gamemode
+        ].join(";");
+
         this.getByteBuffer()
             .writeLong(this.pingId)
             .writeLong(this.serverId);
@@ -45,8 +44,8 @@ class UnconnectedPong extends OfflineMessage {
         this.writeMagic();
 
         this.getByteBuffer()
-            .writeShort(this.name.length)
-            .writeString(this.name)
+            .writeShort(name.length)
+            .writeString(name)
             .flip()
             .compact();
     }

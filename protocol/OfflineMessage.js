@@ -6,6 +6,10 @@ class OfflineMessage extends Packet {
         this.magic = "";
     }
 
+    hasMagic(){
+        return Buffer.from(this.getRakNet().MAGIC, "binary").equals();
+    }
+
     readMagic(){
         this.magic = this.getBuffer().slice(0, 16).toString("binary");
         this.getByteBuffer().flip();
@@ -16,7 +20,7 @@ class OfflineMessage extends Packet {
         this.getByteBuffer().append(this.getRakNet().MAGIC, "binary");
     }
 
-    validateMagic(){
+    verifyMagic(){
         return Buffer.from(this.getRakNet().MAGIC, "binary").equals(Buffer.from(this.magic, "binary"));
     }
 }

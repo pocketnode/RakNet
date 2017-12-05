@@ -6,13 +6,18 @@ class OpenConnectionRequest2 extends OfflineMessage {
         return MessageIdentifiers.ID_OPEN_CONNECTION_REQUEST_2;
     }
 
-    constructor(buffer){
-        super();
-        this.buffer = buffer;
+    initVars(){
         this.clientId = -1;
         this.serverAddress = "";
         this.serverPort = -1;
         this.mtuSize = -1;
+    }
+
+    constructor(buffer){
+        super();
+        this.initVars();
+
+        this.buffer = buffer;
     }
 
     decode(){

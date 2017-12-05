@@ -8,12 +8,15 @@ class OpenConnectionReply1 extends OfflineMessage {
         return MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_1;
     }
 
-    constructor(mtuSize, options){
-        super();
+    initVars(){
+        this.serverId = -1;
+        this.serverSecurity = false;
+        this.mtuSize = -1;
+    }
 
-        this.mtuSize = mtuSize;
-        this.serverId = options.serverId;
-        this.serverSecurity = options.serverSecurity || false;
+    constructor(){
+        super();
+        this.initVars();
 
         this.buffer = new ByteBuffer();
         this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_1;
