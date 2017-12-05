@@ -20,7 +20,6 @@ class SessionManager {
     }
 
     constructor(server, socket){
-        console.log(server, socket);
         this.initVars();
 
         this.server = server;

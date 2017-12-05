@@ -1,4 +1,5 @@
 const RakNet = require("../RakNet");
+const ByteBuffer = require("bytebuffer");
 
 class Packet {
     static getId(){
@@ -10,7 +11,7 @@ class Packet {
 
     constructor(){
         this.raknet = RakNet;
-        this.buffer = {};
+        this.buffer = new ByteBuffer();
     }
 
     decode(){}

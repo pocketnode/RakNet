@@ -32,7 +32,7 @@ class OfflineMessageHandler {
                 return true;
 
             case OpenConnectionRequest2.getId():
-                if(packet.serverPort === this.sessionManager.getPort()){
+                if(true || packet.serverPort === this.sessionManager.getPort()){
                     let mtuSize = Math.min(Math.abs(packet.mtuSize), 1464);
                     pk = new OpenConnectionReply2();
                     pk.mtuSize = mtuSize;
