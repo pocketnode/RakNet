@@ -4,6 +4,8 @@ const TempSession = require("./TempSession");
 const OfflineMessage = require("../protocol/OfflineMessage");
 const OfflineMessageHandler = require("./OfflineMessageHandler");
 
+const Datagram = require("../protocol/Datagram");
+
 class SessionManager {
     initVars(){
         this.server = {};
@@ -82,6 +84,13 @@ class SessionManager {
         packet.decode();
         if(packet instanceof OfflineMessage){
             this.offlineMessageHandler.handle(packet, tsession);
+        }else if(packet instanceof Datagram){
+            if(this.sessionExists(tsession.getAddress(), tsession.getPort())){
+                this.getLogger().debug("Got Datagram for " + tsession);
+                console.log(packet);
+            }else{
+                this.getLogger().debug("Got Datagram for " + tsession + ", a non existing session.");
+            }
         }
     }
 

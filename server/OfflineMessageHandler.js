@@ -41,8 +41,9 @@ class OfflineMessageHandler {
                     pk.clientPort = tsession.getPort();
                     this.sessionManager.sendPacket(pk, tsession);
                     this.sessionManager.createSession(tsession.getAddress(), tsession.getPort(), packet.clientId, mtuSize);
+                    this.sessionManager.getLogger().debug("Created session for " + tsession);
                 }else{
-                    this.sessionManager.getLogger().debug("Not creating session for " + JSON.stringify(tsession) + " due to mismatched port, expected " + this.sessionManager.getPort() + ", got " + packet.serverPort);
+                    this.sessionManager.getLogger().debug("Not creating session for " + tsession + " due to mismatched port, expected " + this.sessionManager.getPort() + ", got " + packet.serverPort);
                 }
                 return true;
         }

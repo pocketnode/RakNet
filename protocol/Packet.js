@@ -1,5 +1,5 @@
 const RakNet = require("../RakNet");
-const ByteBuffer = require("bytebuffer");
+const ByteBuffer = require("../ByteBuffer");
 
 class Packet {
     static getId(){
@@ -27,6 +27,10 @@ class Packet {
 
     getRakNet(){
         return this.raknet;
+    }
+
+    feof(){
+        return typeof this.getBuffer()[this.getBuffer().offset] === "undefined";
     }
 
     readAddress(){

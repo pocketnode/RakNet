@@ -1,4 +1,4 @@
-const ByteBuffer = require("bytebuffer");
+const ByteBuffer = require("../ByteBuffer");
 const dgram = require("dgram");
 
 const TempSession = require("./TempSession");

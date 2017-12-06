@@ -18,7 +18,6 @@ class OpenConnectionReply1 extends OfflineMessage {
         super();
         this.initVars();
 
-        this.buffer = new ByteBuffer();
         this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_1;
         this.getByteBuffer().offset = 1;
     }

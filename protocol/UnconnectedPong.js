@@ -19,7 +19,6 @@ class UnconnectedPong extends OfflineMessage {
         super();
         this.initVars();
 
-        this.buffer = new ByteBuffer();
         this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_UNCONNECTED_PONG;
         this.getByteBuffer().offset = 1;
     }
