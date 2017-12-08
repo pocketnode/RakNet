@@ -88,6 +88,10 @@ class SessionManager {
             if(this.sessionExists(tsession.getAddress(), tsession.getPort())){
                 this.getLogger().debug("Got Datagram for " + tsession);
                 console.log(packet);
+                console.log("Encoding the packet..");
+                packet.buffer = new (require("../ByteBuffer"))();
+                packet.encode();
+                console.log(packet);
             }else{
                 this.getLogger().debug("Got Datagram for " + tsession + ", a non existing session.");
             }

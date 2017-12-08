@@ -22,15 +22,11 @@ class Packet {
     }
 
     getBuffer(){
-        return this.buffer.buffer;
+        return this.getByteBuffer().getBuffer();
     }
 
     getRakNet(){
         return this.raknet;
-    }
-
-    feof(){
-        return typeof this.getBuffer()[this.getBuffer().offset] === "undefined";
     }
 
     readAddress(){

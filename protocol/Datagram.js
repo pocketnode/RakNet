@@ -3,7 +3,7 @@ const EncapsulatedPacket = require("./EncapsulatedPacket");
 
 const ByteBuffer = require("../ByteBuffer");
 
-const BITFLAG = {
+const BitFlag = {
     VALID: 0x80,
     ACK: 0x40,
     NAK: 0x20,
@@ -15,6 +15,9 @@ const BITFLAG = {
 class Datagram extends Packet {
     initVars(){
         this.flags = 0;
+        this.packetPair = false;
+        this.continuousSend = false;
+        this.needsBAndAs = false;
 
         this.packets = [];
 
@@ -37,21 +40,28 @@ class Datagram extends Packet {
     }
 
     encode(){
-        this.getByteBuffer().writeByte(BITFLAG.VALID | this.headerFlags);
-        this.getBuffer().writeLTriad(this.sequenceNumber);
+        if(this.packetPair === true) this.flags |= BitFlag.PACKET_PAIR;
+        if(this.continuousSend === true) this.flags |= BitFlag.CONTINUOUS_SEND;
+        if(this.needsBAndAs === true) this.flags |= BitFlag.NEEDS_B_AND_AS;
+
+        this.getByteBuffer().writeByte(BitFlag.VALID | this.flags);
+        this.getByteBuffer().writeLTriad(this.sequenceNumber);
         this.packets.forEach(packet => {
-            this.getByteBuffer().append(packet instanceof EncapsulatedPacket ? packet.toBinary() : packet.toString(), "binary");
+            this.getByteBuffer().append(packet.toBinary());
         });
     }
 
     decode(){
         this.flags = this.getByteBuffer().readByte();
+
+        this.packetPair = this.flags & BitFlag.PACKET_PAIR !== 0;
+        this.continuousSend = this.flags & BitFlag.CONTINUOUS_SEND !== 0;
+        this.needsBAndAs = this.flags & BitFlag.NEEDS_B_AND_AS !== 0;
+
         this.sequenceNumber = this.getByteBuffer().readLTriad();
 
-        while(!this.feof()){
-            let buffer = new ByteBuffer().append(this.getBuffer().toString().substr(this.getBuffer().offset), "hex");
-
-            let packet = EncapsulatedPacket.fromBinary(buffer, this.getBuffer().offset);
+        while(!this.getByteBuffer().feof()){
+            let packet = EncapsulatedPacket.fromBinary(this.getByteBuffer(), this.getByteBuffer().offset);
 
             if(packet.getBuffer() === "") break;
 

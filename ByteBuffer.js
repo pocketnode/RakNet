@@ -19,15 +19,14 @@ class ByteBuffer extends ByteBufferOriginal {
             .writeByte(value & 0xFF);
         return this;
     }
-}
 
-let bb = new ByteBuffer();
-bb.writeLTriad(0xb3face);
-bb.writeLTriad(0xb3face);
-console.log(bb);
-console.log(bb.readLTriad());
-bb.writeLTriad(0xb3face);
-console.log(bb);
-console.log(typeof bb.buffer[16]);
+    feof(){
+        return typeof this.getBuffer()[this.offset] === "undefined";
+    }
+
+    getBuffer(){
+        return this.buffer;
+    }
+}
 
 module.exports = ByteBuffer;
