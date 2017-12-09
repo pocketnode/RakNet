@@ -1,4 +1,5 @@
 const ByteBufferOriginal = require("bytebuffer");
+let substr = require('locutus/php/strings/substr');
 
 class ByteBuffer extends ByteBufferOriginal {
     constructor(){
@@ -6,18 +7,11 @@ class ByteBuffer extends ByteBufferOriginal {
     }
 
     readLTriad(offset){
-        offset = offset || this.offset;
-        let bytes = [this.readByte(offset-3), this.readByte(offset-2), this.readByte(offset-1)];
-        this.offset -= 3;
-        console.log(bytes);
-        return bytes[2] | (bytes[1] << 8) | (bytes[0] << 16);
+        return this.unpack("V", offset + "\x00");
     }
 
     writeLTriad(value){
-        this.writeByte(value >> 16)
-            .writeByte(value >> 8 & 0xFF)
-            .writeByte(value & 0xFF);
-        return this;
+        return substr(this.pack("N", value), 1);
     }
 
     feof(){
@@ -27,6 +21,24 @@ class ByteBuffer extends ByteBufferOriginal {
     getBuffer(){
         return this.buffer;
     }
+
+    pack(bytes) {
+        var chars = [];
+        for(var i = 0, n = bytes.length; i < n;) {
+            chars.push(((bytes[i++] & 0xff) << 8) | (bytes[i++] & 0xff));
+        }
+        return String.fromCharCode.apply(null, chars);
+    }
+
+   unpack(str) {
+        var bytes = [];
+        for(var i = 0, n = str.length; i < n; i++) {
+            var char = str.charCodeAt(i);
+            bytes.push(char >>> 8, char & 0xFF);
+        }
+        return bytes;
+    }
+
 }
 
 module.exports = ByteBuffer;
