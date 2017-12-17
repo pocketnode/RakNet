@@ -33,7 +33,7 @@ class UDPServerSocket {
 
     setListeners(){
         this.socket.on("error", err => {
-            this.logger.error("UDPSocketServer Error:", err);
+            this.logger.error(err);
             this.close();
         });
 
