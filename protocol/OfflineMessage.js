@@ -1,4 +1,5 @@
 const Packet = require("./Packet");
+const RakNet = require("../RakNet");
 
 class OfflineMessage extends Packet {
     constructor(){
@@ -6,22 +7,23 @@ class OfflineMessage extends Packet {
         this.magic = "";
     }
 
+    //todo
     hasMagic(){
-        return Buffer.from(this.getRakNet().MAGIC, "binary").equals();
+        return Buffer.from(RakNet.MAGIC, "binary").equals();
     }
 
     readMagic(){
         this.magic = this.getBuffer().slice(0, 16).toString("binary");
-        this.getByteBuffer().flip();
-        this.getByteBuffer().offset += 16;
+        this.getStream().increaseOffset(16);
     }
 
     writeMagic(){
-        this.getByteBuffer().append(this.getRakNet().MAGIC, "binary");
+        this.getBuffer().write(RakNet.MAGIC, this.getStream().offset, 16, "binary");
+        this.getStream().increaseOffset(16);
     }
 
     verifyMagic(){
-        return Buffer.from(this.getRakNet().MAGIC, "binary").equals(Buffer.from(this.magic, "binary"));
+        return Buffer.from(RakNet.MAGIC, "binary").equals(Buffer.from(this.magic, "binary"));
     }
 }
 

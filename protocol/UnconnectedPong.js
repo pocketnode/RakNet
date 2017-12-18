@@ -1,5 +1,3 @@
-const ByteBuffer = require("bytebuffer");
-
 const OfflineMessage = require("./OfflineMessage");
 const MessageIdentifiers = require("./MessageIdentifiers");
 
@@ -19,8 +17,7 @@ class UnconnectedPong extends OfflineMessage {
         super();
         this.initVars();
 
-        this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_UNCONNECTED_PONG;
-        this.getByteBuffer().offset = 1;
+        this.getStream().writeByte(MessageIdentifiers.ID_UNCONNECTED_PONG);
     }
     
     encode(){
@@ -36,17 +33,15 @@ class UnconnectedPong extends OfflineMessage {
             this.serverName.gamemode
         ].join(";");
 
-        this.getByteBuffer()
+        this.getStream()
             .writeLong(this.pingId)
             .writeLong(this.serverId);
 
         this.writeMagic();
 
-        this.getByteBuffer()
+        this.getStream()
             .writeShort(name.length)
-            .writeString(name)
-            .flip()
-            .compact();
+            .writeString(name);
     }
 }
 

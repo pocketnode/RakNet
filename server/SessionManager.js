@@ -87,10 +87,6 @@ class SessionManager {
         }else if(packet instanceof Datagram){
             if(this.sessionExists(tsession.getAddress(), tsession.getPort())){
                 this.getLogger().debug("Got Datagram for " + tsession);// + ", " + packet.buffer.toString("debug"));
-                //console.log("Encoding the packet..");
-                //packet.buffer = new (require("../ByteBuffer"))();
-                //packet.encode();
-                //console.log(packet);
             }else{
                 this.getLogger().debug("Got Datagram for " + tsession + ", a non existing session.");
             }

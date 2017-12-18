@@ -1,4 +1,4 @@
-const ByteBuffer = require("../ByteBuffer");
+const BinaryStream = require("../BinaryStream");
 
 const PacketReliability = {
     /*
@@ -34,46 +34,46 @@ class EncapsulatedPacket {
         this.splitCount = null;
         this.splitId = null;
         this.splitIndex = null;
-        this.buffer = new ByteBuffer();
+        this.stream = new BinaryStream();
     }
 
     constructor(){
         this.initVars();
     }
 
-    static fromBinary(buffer, offset){
+    static fromBinary(stream, offset){
         let packet = new EncapsulatedPacket();
 
-        let flags = buffer.readByte();
+        let flags = stream.readByte();
         packet.reliability = (flags & EPFlags.RELIABILITY_FLAGS) >> EPFlags.RELIABILITY_SHIFT;
         packet.hasSplit = (flags & EPFlags.SPLIT_FLAG) > 0;
 
-        if(buffer.feof()){
+        if(stream.feof()){
             return packet;
         }
 
-        packet.length = buffer.readUint16() / 8;
+        packet.length = stream.readShort() / 8;
 
         if(packet.length === 0){
             return packet;
         }
 
         if(packet.isReliable()){
-            packet.messageIndex = buffer.readLTriad();
+            packet.messageIndex = stream.readLTriad();
         }
 
         if(packet.isSequenced()){
-            packet.orderIndex = buffer.readLTriad();
-            packet.orderChannel = buffer.readByte();
+            packet.orderIndex = stream.readLTriad();
+            packet.orderChannel = stream.readByte();
         }
 
         if(packet.hasSplit){
-            packet.splitCount = buffer.readInt32();
-            packet.splitId = buffer.readInt16(); //readShort
-            packet.splitIndex = buffer.readInt32();
+            packet.splitCount = stream.readInt();
+            packet.splitId = stream.readShort(true); //readShort
+            packet.splitIndex = stream.readInt();
         }
 
-        packet.buffer = new ByteBuffer().append(buffer.buffer.toString().substr(offset, packet.length));
+        packet.stream = new BinaryStream(Buffer.from(stream.buffer.toString().substr(offset, packet.length)));
 
 
         return packet;
@@ -81,7 +81,7 @@ class EncapsulatedPacket {
 
     toBinary(){
         let buffer = this.getBuffer().toString();
-        let binary = new ByteBuffer();
+        let binary = new BinaryStream();
 
         let split = this.hasSplit ? EPFlags.SPLIT_FLAG : 0;
 
@@ -99,12 +99,12 @@ class EncapsulatedPacket {
         }
 
         if(this.hasSplit){
-            binary.writeInt32(this.splitCount);
-            binary.writeInt16(this.splitId);
-            binary.writeInt32(this.splitIndex);
+            binary.writeInt(this.splitCount);
+            binary.writeShort(this.splitId);
+            binary.writeInt(this.splitIndex);
         }
 
-        binary.append(buffer);
+        binary.writeString(buffer);
 
         return binary.buffer.toString();
     }
@@ -134,12 +134,12 @@ class EncapsulatedPacket {
         }
     }
 
-    getByteBuffer(){
-        return this.buffer;
+    getStream(){
+        return this.stream;
     }
 
     getBuffer(){
-        return this.getByteBuffer().buffer;
+        return this.getStream().buffer;
     }
 }
 

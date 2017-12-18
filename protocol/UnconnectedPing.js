@@ -1,3 +1,5 @@
+const BinaryStream = require("../BinaryStream");
+
 const OfflineMessage = require("./OfflineMessage");
 const MessageIdentifiers = require("./MessageIdentifiers");
 
@@ -10,17 +12,16 @@ class UnconnectedPing extends OfflineMessage {
         this.pingId = -1;
     }
 
-    constructor(buffer){
+    constructor(stream){
         super();
         this.initVars();
 
-        this.buffer = buffer;
-        this.getByteBuffer().offset = 1;
+        this.stream = stream;
+        this.getStream().increaseOffset(1);
     }
 
     decode(){
-        this.pingId = this.getByteBuffer().readLong();
-        this.getByteBuffer().flip();
+        this.pingId = this.getStream().readLong();
     }
 }
 

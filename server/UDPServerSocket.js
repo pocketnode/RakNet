@@ -1,4 +1,4 @@
-const ByteBuffer = require("../ByteBuffer");
+const BinaryStream = require("../BinaryStream");
 const dgram = require("dgram");
 
 const TempSession = require("./TempSession");
@@ -38,16 +38,16 @@ class UDPServerSocket {
         });
 
         this.socket.on("message", (msg, rinfo) => {
-            let buffer = new ByteBuffer().append(msg, "hex");
+            let stream = new BinaryStream(msg);
             let tsession = new TempSession(rinfo.address, rinfo.port);
 
-            let packetId = buffer.buffer[0];
+            let packetId = stream.getBuffer()[0];
 
             this.logger.debug("Received Id: " + packetId);
 
             let packet = this.packetPool.getPacket(packetId);
 
-            this.sessionManager.handle(new packet(buffer), tsession);
+            this.sessionManager.handle(new packet(stream), tsession);
         });
     }
 }

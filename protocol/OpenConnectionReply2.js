@@ -1,5 +1,3 @@
-const ByteBuffer = require("bytebuffer");
-
 const OfflineMessage = require("./OfflineMessage");
 const MessageIdentifiers = require("./MessageIdentifiers");
 
@@ -20,20 +18,16 @@ class OpenConnectionReply2 extends OfflineMessage {
         super();
         this.initVars();
 
-        this.getByteBuffer().buffer[0] = MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_2;
-        this.getByteBuffer().offset = 1;
+        this.getStream().writeByte(MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_2);
     }
 
     encode(){
         this.writeMagic();
-        this.getByteBuffer()
-            .writeLong(this.serverId);
-        this.writeAddress(this.clientAddress, this.clientPort, 4);
-        this.getByteBuffer()
+        this.getStream()
+            .writeLong(this.serverId)
+            .writeAddress(this.clientAddress, this.clientPort, 4)
             .writeShort(this.mtuSize)
-            .writeByte(this.serverSecurity ? 1 : 0)
-            .flip()
-            .compact();
+            .writeBool(this.serverSecurity);
     }
 }
 

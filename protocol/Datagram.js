@@ -1,8 +1,6 @@
 const Packet = require("./Packet");
 const EncapsulatedPacket = require("./EncapsulatedPacket");
 
-const ByteBuffer = require("../ByteBuffer");
-
 const BitFlag = {
     VALID: 0x80,
     ACK: 0x40,
@@ -24,11 +22,11 @@ class Datagram extends Packet {
         this.sequenceNumber = 0;
     }
 
-    constructor(buffer){
+    constructor(stream){
         super();
         this.initVars();
 
-        this.buffer = buffer;
+        this.stream = stream;
     }
 
     length(){
@@ -44,25 +42,25 @@ class Datagram extends Packet {
         if(this.continuousSend === true) this.flags |= BitFlag.CONTINUOUS_SEND;
         if(this.needsBAndAs === true) this.flags |= BitFlag.NEEDS_B_AND_AS;
 
-        this.getByteBuffer().writeByte(BitFlag.VALID | this.flags);
-        this.getByteBuffer().writeLTriad(this.sequenceNumber);
+        this.getStream().writeByte(BitFlag.VALID | this.flags);
+        this.getStream().writeLTriad(this.sequenceNumber);
         this.packets.forEach(packet => {
-            this.getByteBuffer().append(packet.toBinary());
+            this.getStream().writeString(packet.toBinary());
         });
     }
 
     decode(){
-        this.flags = this.getByteBuffer().readByte();
+        this.flags = this.getStream().readByte();
 
         this.packetPair = this.flags & BitFlag.PACKET_PAIR !== 0;
         this.continuousSend = this.flags & BitFlag.CONTINUOUS_SEND !== 0;
         this.needsBAndAs = this.flags & BitFlag.NEEDS_B_AND_AS !== 0;
 
-        this.sequenceNumber = this.getByteBuffer().readLTriad();
+        this.sequenceNumber = this.getStream().readLTriad();
 
-        while(!this.getByteBuffer().feof()){
-            let packet = EncapsulatedPacket.fromBinary(this.getByteBuffer(), this.getByteBuffer().offset);
-
+        while(!this.getStream().feof()){
+            let packet = EncapsulatedPacket.fromBinary(this.getStream(), this.getStream().offset);
+            console.log(packet);
             if(packet.getBuffer() === "") break;
 
             this.packets.push(packet);
