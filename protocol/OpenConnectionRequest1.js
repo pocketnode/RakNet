@@ -7,7 +7,7 @@ class OpenConnectionRequest1 extends OfflineMessage {
     }
 
     initVars(){
-        this.protocol = -1;
+        this.protocolVersion = -1;
         this.mtuSize = -1;
     }
 
@@ -18,10 +18,10 @@ class OpenConnectionRequest1 extends OfflineMessage {
         this.stream = stream;
     }
 
-    decode(){
+    decodePayload(){
         this.readMagic();
-        this.protocol = this.getStream().readByte();
-        this.mtuSize  = (this.getBuffer().slice(this.getStream().offset)).length + 18;
+        this.protocolVersion = this.getStream().readByte();
+        this.mtuSize = (this.getBuffer().slice(this.getStream().offset)).length + 18;
     }
 }
 

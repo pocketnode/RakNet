@@ -17,11 +17,9 @@ class OpenConnectionReply2 extends OfflineMessage {
     constructor(){
         super();
         this.initVars();
-
-        this.getStream().writeByte(MessageIdentifiers.ID_OPEN_CONNECTION_REPLY_2);
     }
 
-    encode(){
+    encodePayload(){
         this.writeMagic();
         this.getStream()
             .writeLong(this.serverId)

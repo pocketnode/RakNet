@@ -16,11 +16,9 @@ class UnconnectedPong extends OfflineMessage {
     constructor(){
         super();
         this.initVars();
-
-        this.getStream().writeByte(MessageIdentifiers.ID_UNCONNECTED_PONG);
     }
     
-    encode(){
+    encodePayload(){
         let name = [
             "MCPE",
             this.serverName.name,

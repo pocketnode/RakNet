@@ -13,8 +13,29 @@ class Packet {
         this.stream = new BinaryStream(128);
     }
 
-    decode(){}
-    encode(){}
+    encode(){
+        this.encodeHeader();
+        this.encodePayload();
+    }
+
+    encodeHeader(){
+        this.getStream().writeByte(this.getId());
+    }
+
+    encodePayload(){}
+
+
+    decode(){
+        this.decodeHeader();
+        this.decodePayload();
+    }
+
+    decodeHeader(){
+        this.getStream().readByte();
+    }
+
+    decodePayload(){}
+
 
     getStream(){
         return this.stream;
