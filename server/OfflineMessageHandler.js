@@ -1,3 +1,5 @@
+const RakNet = require("../RakNet");
+
 const OfflineMessage = require("../protocol/OfflineMessage");
 const UnconnectedPing = require("../protocol/UnconnectedPing");
 const UnconnectedPong = require("../protocol/UnconnectedPong");
@@ -5,6 +7,7 @@ const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
 const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
 const OpenConnectionReply1 = require("../protocol/OpenConnectionReply1");
 const OpenConnectionReply2 = require("../protocol/OpenConnectionReply2");
+const IncompatibleProtocolVersion = require("../protocol/IncompatibleProtocolVersion");
 
 class OfflineMessageHandler {
     constructor(manager){
@@ -25,9 +28,17 @@ class OfflineMessageHandler {
                 return true;
 
             case OpenConnectionRequest1.getId():
-                pk = new OpenConnectionReply1();
-                pk.mtuSize = packet.mtuSize;
-                pk.serverId = this.sessionManager.getId();
+                if(packet.protocolVersion !== RakNet.PROTOCOL){
+                    pk = new IncompatibleProtocolVersion();
+                    pk.protocolVersion = RakNet.PROTOCOL;
+                    pk.serverId = this.sessionManager.getId();
+                    this.sessionManager.getLogger().debug(tsession+" couldn't connect because they had protocol " + packet.protocolVersion + ", while RakNet is running on protocol " + RakNet.PROTOCOL);
+                }else{
+                    pk = new OpenConnectionReply1();
+                    pk.serverId = this.sessionManager.getId();
+                    //serverSecurity = false
+                    pk.mtuSize = packet.mtuSize;
+                }
                 this.sessionManager.sendPacket(pk, tsession);
                 return true;
 
@@ -35,10 +46,10 @@ class OfflineMessageHandler {
                 if(true || packet.serverPort === this.sessionManager.getPort()){
                     let mtuSize = Math.min(Math.abs(packet.mtuSize), 1464);
                     pk = new OpenConnectionReply2();
-                    pk.mtuSize = mtuSize;
                     pk.serverId = this.sessionManager.getId();
                     pk.clientAddress = tsession.getAddress();
                     pk.clientPort = tsession.getPort();
+                    pk.mtuSize = mtuSize;
                     this.sessionManager.sendPacket(pk, tsession);
                     this.sessionManager.createSession(tsession.getAddress(), tsession.getPort(), packet.clientId, mtuSize);
                     this.sessionManager.getLogger().debug("Created session for " + tsession);
