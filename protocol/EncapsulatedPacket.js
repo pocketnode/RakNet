@@ -17,10 +17,10 @@ const PacketReliability = {
     RELIABLE_ORDERED_WITH_ACK_RECEIPT: 7
 };
 
-const EPFlags = {
+const Flags = {
     RELIABILITY_SHIFT: 5,
-    RELIABILITY_FLAGS: 0b111 << this.RELIABILITY_SHIFT,
-    SPLIT_FLAG: 0b00010000
+    RELIABILITY_FLAGS: 0x07 << this.RELIABILITY_SHIFT,
+    SPLIT_FLAG: 0x10
 };
 
 class EncapsulatedPacket {
@@ -41,21 +41,26 @@ class EncapsulatedPacket {
         this.initVars();
     }
 
-    static fromBinary(stream, offset){
+    static fromBinary(stream){
         let packet = new EncapsulatedPacket();
 
         let flags = stream.readByte();
-        packet.reliability = (flags & EPFlags.RELIABILITY_FLAGS) >> EPFlags.RELIABILITY_SHIFT;
-        packet.hasSplit = (flags & EPFlags.SPLIT_FLAG) > 0;
+        packet.reliability = ((flags & Flags.RELIABILITY_FLAGS) >> Flags.RELIABILITY_SHIFT);
+        packet.hasSplit = (flags & Flags.SPLIT_FLAG) !== 0;
 
         if(stream.feof()){
-            return packet;
+            console.log("ran out of bytes to read. couldn't get length.");
+            return {packet:packet,offset:stream.offset};
         }
 
-        packet.length = stream.readShort() / 8;
+        //console.log(JSON.stringify({buffer: stream.buffer.toString("hex"), buffer_length: stream.buffer.length, offset: stream.offset}, false, 4));
+
+        packet.length = Math.ceil(stream.readShort() / 8);
+
+        //console.log(JSON.stringify({length: packet.length}));
 
         if(packet.length === 0){
-            return packet;
+            return {packet:packet,offset:stream.offset};
         }
 
         if(packet.isReliable()){
@@ -69,44 +74,43 @@ class EncapsulatedPacket {
 
         if(packet.hasSplit){
             packet.splitCount = stream.readInt();
-            packet.splitId = stream.readShort(true); //readShort
+            packet.splitId = stream.readShort();
             packet.splitIndex = stream.readInt();
         }
 
-        packet.stream = new BinaryStream(Buffer.from(stream.buffer.toString().substr(offset, packet.length)));
+        packet.stream = new BinaryStream(stream.buffer.slice(stream.offset, packet.length));
 
-
-        return packet;
+        return {packet:packet,offset:stream.offset};
     }
 
     toBinary(){
-        let buffer = this.getBuffer().toString();
-        let binary = new BinaryStream();
+        let buffer = this.getBuffer();
+        let stream = new BinaryStream();
 
-        let split = this.hasSplit ? EPFlags.SPLIT_FLAG : 0;
+        let split = this.hasSplit ? Flags.SPLIT_FLAG : 0;
 
-        binary.writeByte((this.reliability << 5) | split);
+        stream.writeByte((this.reliability << 5) | split);
 
-        binary.writeShort(buffer.length << 3);
+        stream.writeShort(buffer.length << 3);
 
         if(this.isReliable()){
-            binary.writeLTriad(this.messageIndex);
+            stream.writeLTriad(this.messageIndex);
         }
 
         if(this.isSequenced()){
-            binary.writeLTriad(this.orderIndex);
-            binary.writeByte(this.orderChannel);
+            stream.writeLTriad(this.orderIndex);
+            stream.writeByte(this.orderChannel);
         }
 
         if(this.hasSplit){
-            binary.writeInt(this.splitCount);
-            binary.writeShort(this.splitId);
-            binary.writeInt(this.splitIndex);
+            stream.writeInt(this.splitCount);
+            stream.writeShort(this.splitId);
+            stream.writeInt(this.splitIndex);
         }
 
-        binary.writeString(buffer);
+        stream.writeString(buffer);
 
-        return binary.buffer.toString();
+        return stream.buffer.toString();
     }
 
     isReliable(){

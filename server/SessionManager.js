@@ -5,6 +5,7 @@ const OfflineMessage = require("../protocol/OfflineMessage");
 const OfflineMessageHandler = require("./OfflineMessageHandler");
 
 const Datagram = require("../protocol/Datagram");
+const DatagramHandler = require("./DatagramHandler");
 
 class SessionManager {
     initVars(){
@@ -28,6 +29,7 @@ class SessionManager {
         this.socket = socket;
 
         this.offlineMessageHandler = new OfflineMessageHandler(this);
+        this.datagramHandler = new DatagramHandler(this);
     }
 
     getPort(){
@@ -69,7 +71,8 @@ class SessionManager {
     }
 
     sessionExists(address, port){
-        return this.sessions.has(address + ":" + port);
+        if(address instanceof TempSession || address instanceof Session) return this.sessions.has(address.toString());
+        else return this.sessions.has(address + ":" + port);
     }
 
     getSession(address, port){
@@ -80,16 +83,12 @@ class SessionManager {
         }
     }
 
-    handle(packet, tsession){
+    handle(packet, session){
         packet.decode();
         if(packet instanceof OfflineMessage){
-            this.offlineMessageHandler.handle(packet, tsession);
+            this.offlineMessageHandler.handle(packet, session);
         }else if(packet instanceof Datagram){
-            if(this.sessionExists(tsession.getAddress(), tsession.getPort())){
-                this.getLogger().debug("Got Datagram for " + tsession);// + ", " + packet.buffer.toString("debug"));
-            }else{
-                this.getLogger().debug("Got Datagram for " + tsession + ", a non existing session.");
-            }
+            this.datagramHandler.handle(packet, session);
         }
     }
 
