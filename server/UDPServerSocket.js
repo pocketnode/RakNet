@@ -43,11 +43,15 @@ class UDPServerSocket {
 
             let packetId = stream.getBuffer()[0];
 
-            this.logger.debug("Received Id: " + packetId);
+            this.logger.debug("Received Id:", packetId, "Length:", msg.length);
 
             let packet = this.packetPool.getPacket(packetId);
 
             this.sessionManager.handle(new packet(stream), tsession);
+        });
+
+        this.socket.on("close", () => {
+            this.logger.debug("Something closed.. lol");
         });
     }
 }
