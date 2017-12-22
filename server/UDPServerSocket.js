@@ -1,7 +1,6 @@
 const BinaryStream = require("../BinaryStream");
 const dgram = require("dgram");
 
-const TempSession = require("./TempSession");
 const SessionManager = require("./SessionManager");
 
 class UDPServerSocket {
@@ -13,10 +12,8 @@ class UDPServerSocket {
     }
 
     constructor(raknet, port, logger){
-        this.packetPool = raknet.getPacketPool();
         this.logger = logger;
         this.sessionManager = new SessionManager(raknet, this);
-
 
         this.socket = dgram.createSocket("udp4");
         this.setListeners();
@@ -38,20 +35,19 @@ class UDPServerSocket {
         });
 
         this.socket.on("message", (msg, rinfo) => {
+            this.sessionManager.bytes.received += msg.length;
+
             let stream = new BinaryStream(msg);
-            let tsession = new TempSession(rinfo.address, rinfo.port);
 
             let packetId = stream.getBuffer()[0];
 
-            this.logger.debug("Received Id:", packetId, "Length:", msg.length);
+            //this.logger.debug("Received", packetId, "with length of", msg.length, "from", rinfo.address + ":" + rinfo.port);
 
-            let packet = this.packetPool.getPacket(packetId);
-
-            this.sessionManager.handle(new packet(stream), tsession);
+            this.sessionManager.handle(packetId, stream, rinfo.address, rinfo.port);
         });
 
         this.socket.on("close", () => {
-            this.logger.debug("Something closed.. lol");
+            this.sessionManager.shutdown();
         });
     }
 }
