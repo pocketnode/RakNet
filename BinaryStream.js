@@ -15,6 +15,10 @@ class BinaryStream {
         }
     }
 
+    get length(){
+        return this.buffer.length;
+    }
+
     increaseOffset(v){
         return (this.offset += v) - v;
     }
@@ -75,15 +79,10 @@ class BinaryStream {
 
     /**
      * Reads a unsigned/signed byte
-     * @param s
      * @returns {number}
      */
-    readByte(s = true){
-        if(s === true){
-            return this.buffer.readInt8(this.increaseOffset(1));
-        }else {
-            return this.buffer.readUint8(this.increaseOffset(1));
-        }
+    readByte(){
+        return this.getBuffer()[this.increaseOffset(1)];
     }
 
     /**
@@ -92,7 +91,7 @@ class BinaryStream {
      * @returns {BinaryStream}
      */
     writeByte(v){
-        this.buffer.writeUInt8(v, this.increaseOffset(1));
+        this.buffer[this.increaseOffset(1)] = v;
         return this;
     }
 
@@ -115,7 +114,7 @@ class BinaryStream {
      * @param s
      * @returns {BinaryStream}
      */
-    writeShort(v, s = true){
+    writeShort(v, s = false){
         if(s === true){
             this.buffer.writeInt16BE(v, this.increaseOffset(2));
         }else{
@@ -223,18 +222,26 @@ class BinaryStream {
         return typeof this.getBuffer()[this.offset] === "undefined";
     }
 
+    getRemainingBytes(){
+        return this.buffer.length - this.offset;
+    }
+
     readAddress(){
         let addr, port;
         let version = this.readByte();
         switch(version){
             default:
             case 4:
-                addr = ((this.readByte()) & 0xff) + "." + ((this.readByte()) & 0xff) + "." + ((this.readByte()) & 0xff) + "." + ((this.readByte()) & 0xff);
-                port = this.readShort();
+                addr = [];
+                for(let i = 0; i < 4; i++){
+                    addr.push(this.readByte() & 0xff);
+                }
+                addr = addr.join(".");
+                port = this.readShort(false);
                 break;
             // add ipv6 support
         }
-        return {ip: addr, port: port};
+        return {ip: addr, port: port, version: version};
     }
 
     writeAddress(addr, port, version = 4){
@@ -242,18 +249,35 @@ class BinaryStream {
         switch(version){
             default:
             case 4:
-                addr.split(".").forEach(b => {
-                    this.writeByte((parseInt(b)) & 0xff);
+                addr.split(".", 4).forEach(b => {
+                    this.writeByte((Number(b)) & 0xff);
                 });
                 this.writeShort(port, false);
                 break;
         }
+        return this;
+    }
+
+    writeString(v, encoding = "utf8"){
+        this.buffer.write(v, this.increaseOffset(v.length), v.length, encoding);
+        return this;
+    }
+
+    appendBuffer(buf){
+        if(!(buf instanceof Buffer)) throw new TypeError("Expecting Buffer, got "+buf);
+
+        this.buffer.write(buf.toString("hex"), this.increaseOffset(buf.length), buf.length, "hex");
 
         return this;
     }
 
-    writeString(v){
-        this.buffer.write(v, this.increaseOffset(v.length), v.length);
+    compact(){
+        this.buffer = this.buffer.slice(0, this.offset);
+        return this;
+    }
+
+    flip(){
+        this.offset = 0;
         return this;
     }
 
