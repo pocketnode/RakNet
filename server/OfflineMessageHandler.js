@@ -14,7 +14,7 @@ class OfflineMessageHandler {
         this.sessionManager = manager;
     }
 
-    handle(packet, tsession){
+    handle(packet, address, port){
         if(!(packet instanceof OfflineMessage)) throw new Error("Expected OfflineMessage, got " + (packet.name ? packet.name : packet));
 
         let pk;
@@ -24,7 +24,7 @@ class OfflineMessageHandler {
                 pk.serverName = this.sessionManager.getName();
                 pk.serverId = this.sessionManager.getId();
                 pk.pingId = packet.pingId;
-                this.sessionManager.sendPacket(pk, tsession);
+                this.sessionManager.sendPacket(pk, address, port);
                 return true;
 
             case OpenConnectionRequest1.getId():
@@ -32,14 +32,13 @@ class OfflineMessageHandler {
                     pk = new IncompatibleProtocolVersion();
                     pk.protocolVersion = RakNet.PROTOCOL;
                     pk.serverId = this.sessionManager.getId();
-                    this.sessionManager.getLogger().debug(tsession+" couldn't connect because they had protocol " + packet.protocolVersion + ", while RakNet is running on protocol " + RakNet.PROTOCOL);
+                    this.sessionManager.getLogger().debug(address+":"+port+" couldn't connect because they had protocol " + packet.protocolVersion + ", while RakNet is running on protocol " + RakNet.PROTOCOL);
                 }else{
                     pk = new OpenConnectionReply1();
                     pk.serverId = this.sessionManager.getId();
-                    //serverSecurity = false
                     pk.mtuSize = packet.mtuSize;
                 }
-                this.sessionManager.sendPacket(pk, tsession);
+                this.sessionManager.sendPacket(pk, address, port);
                 return true;
 
             case OpenConnectionRequest2.getId():
@@ -47,14 +46,14 @@ class OfflineMessageHandler {
                     let mtuSize = Math.min(Math.abs(packet.mtuSize), 1464);
                     pk = new OpenConnectionReply2();
                     pk.serverId = this.sessionManager.getId();
-                    pk.clientAddress = tsession.getAddress();
-                    pk.clientPort = tsession.getPort();
+                    pk.clientAddress = address;
+                    pk.clientPort = port;
                     pk.mtuSize = mtuSize;
-                    this.sessionManager.sendPacket(pk, tsession);
-                    this.sessionManager.createSession(tsession.getAddress(), tsession.getPort(), packet.clientId, mtuSize);
-                    this.sessionManager.getLogger().debug("Created session for " + tsession);
+                    this.sessionManager.sendPacket(pk, address, port);
+                    let session = this.sessionManager.createSession(address, port, packet.clientId, mtuSize);
+                    this.sessionManager.getLogger().debug("Created session for "+session);
                 }else{
-                    this.sessionManager.getLogger().debug("Not creating session for " + tsession + " due to mismatched port, expected " + this.sessionManager.getPort() + ", got " + packet.serverPort);
+                    this.sessionManager.getLogger().debug("Not creating session for " + address + ":" + port + " due to mismatched port, expected " + this.sessionManager.getPort() + ", got " + packet.serverPort);
                 }
                 return true;
         }
