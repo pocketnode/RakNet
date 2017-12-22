@@ -7,23 +7,16 @@ class OfflineMessage extends Packet {
         this.magic = "";
     }
 
-    //todo
-    hasMagic(){
-        return Buffer.from(RakNet.MAGIC, "binary").equals();
-    }
-
     readMagic(){
-        this.magic = this.getBuffer().slice(0, 16).toString("binary");
-        this.getStream().increaseOffset(16);
+        this.magic = this.getBuffer().slice(this.getStream().increaseOffset(16), this.getStream().offset);
     }
 
     writeMagic(){
-        this.getBuffer().write(RakNet.MAGIC, this.getStream().offset, 16, "binary");
-        this.getStream().increaseOffset(16);
+        this.getBuffer().write(RakNet.MAGIC, this.getStream().increaseOffset(16), 16, "binary");
     }
 
-    verifyMagic(){
-        return Buffer.from(RakNet.MAGIC, "binary").equals(Buffer.from(this.magic, "binary"));
+    validMagic(){
+        return this.magic.equals(Buffer.from(RakNet.MAGIC, "binary"));
     }
 }
 
