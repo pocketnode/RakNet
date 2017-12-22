@@ -19,6 +19,7 @@ class UnconnectedPing extends OfflineMessage {
 
     decodePayload(){
         this.pingId = this.getStream().readLong();
+        this.readMagic();
     }
 }
 

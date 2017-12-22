@@ -25,7 +25,8 @@ class OpenConnectionReply2 extends OfflineMessage {
             .writeLong(this.serverId)
             .writeAddress(this.clientAddress, this.clientPort, 4)
             .writeShort(this.mtuSize)
-            .writeBool(this.serverSecurity);
+            .writeBool(this.serverSecurity)
+            .compact();
     }
 }
 

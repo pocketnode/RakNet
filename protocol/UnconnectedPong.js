@@ -39,7 +39,8 @@ class UnconnectedPong extends OfflineMessage {
 
         this.getStream()
             .writeShort(name.length)
-            .writeString(name);
+            .writeString(name)
+            .compact();
     }
 }
 
