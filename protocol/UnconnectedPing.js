@@ -10,17 +10,16 @@ class UnconnectedPing extends OfflineMessage {
         this.pingId = -1;
     }
 
-    constructor(buffer){
+    constructor(stream){
         super();
         this.initVars();
 
-        this.buffer = buffer;
-        this.getByteBuffer().offset = 1;
+        this.stream = stream;
     }
 
-    decode(){
-        this.pingId = this.getByteBuffer().readLong();
-        this.getByteBuffer().flip();
+    decodePayload(){
+        this.pingId = this.getStream().readLong();
+        this.readMagic();
     }
 }
 

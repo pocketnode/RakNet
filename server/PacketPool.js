@@ -2,8 +2,6 @@ const UnconnectedPing = require("../protocol/UnconnectedPing");
 const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
 const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
 
-const Datagram = require("../protocol/Datagram");
-
 class PacketPool {
     constructor(){
         this.packetPool = new Map();
@@ -15,8 +13,7 @@ class PacketPool {
     }
 
     getPacket(id){
-        return this.packetPool.has(id) ? this.packetPool.get(id)
-            : Datagram;
+        return this.packetPool.has(id) ? this.packetPool.get(id) : null;
     }
 
     registerPackets(){

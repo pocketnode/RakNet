@@ -1,60 +1,55 @@
-const RakNet = require("../RakNet");
-const ByteBuffer = require("../ByteBuffer");
+const BinaryStream = require("../BinaryStream");
 
 class Packet {
     static getId(){
         return -1;
     }
+
     getId(){
         return this.constructor.getId();
     }
 
-    constructor(){
-        this.raknet = RakNet;
-        this.buffer = new ByteBuffer();
+    constructor(stream){
+        if(stream instanceof BinaryStream){
+            this.stream = stream;
+        }else{
+            this.stream = new BinaryStream(128);
+        }
     }
 
-    decode(){}
-    encode(){}
+    encode(){
+        this.encodeHeader();
+        this.encodePayload();
+        if(!this.getStream().feof()){ // if not compact
+            this.getStream().compact();
+        }
+    }
 
-    getByteBuffer(){
-        return this.buffer;
+    encodeHeader(){
+        this.getStream().writeByte(this.getId());
+    }
+
+    encodePayload(){}
+
+
+    decode(){
+        this.decodeHeader();
+        this.decodePayload();
+    }
+
+    decodeHeader(){
+        this.getStream().readByte();
+    }
+
+    decodePayload(){}
+
+
+    getStream(){
+        return this.stream;
     }
 
     getBuffer(){
-        return this.getByteBuffer().getBuffer();
-    }
-
-    getRakNet(){
-        return this.raknet;
-    }
-
-    readAddress(){
-        let addr, port;
-        let version = this.getByteBuffer().readByte();
-        switch(version){
-            default:
-            case 4:
-                addr = ((this.getByteBuffer().readByte()) & 0xff) + "." + ((this.getByteBuffer().readByte()) & 0xff) + "." + ((this.getByteBuffer().readByte()) & 0xff) + "." + ((this.getByteBuffer().readByte()) & 0xff);
-                port = this.getByteBuffer().readShort();
-                break;
-            // add ipv6 support
-        }
-        return {ip: addr, port: port};
-    }
-
-    writeAddress(addr, port, version){
-        version = version || 4;
-        this.getByteBuffer().writeByte(version);
-        switch(version){
-            default:
-            case 4:
-                addr.split(".").forEach(b => {
-                    this.getByteBuffer().writeByte((parseInt(b)) & 0xff);
-                });
-                this.getByteBuffer().writeUint16(port);
-                break;
-        }
+        return this.getStream().getBuffer();
     }
 }
 

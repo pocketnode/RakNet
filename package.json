@@ -22,7 +22,6 @@
   },
   "homepage": "https://github.com/PocketNode/RakNet#readme",
   "dependencies": {
-    "bytebuffer": "^5.0.1",
     "dgram": "^1.0.1"
   }
 }

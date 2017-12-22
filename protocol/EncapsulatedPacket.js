@@ -1,145 +1,116 @@
-const ByteBuffer = require("../ByteBuffer");
+const BinaryStream = require("../BinaryStream");
 
-const PacketReliability = {
-    /*
-     * From https://github.com/OculusVR/RakNet/blob/master/Source/PacketPriority.h
-     *
-     * Default: 0b010 (2) or 0b011 (3)
-     */
-
-    UNRELIABLE: 0,
-    UNRELIABLE_SEQUENCED: 1,
-    RELIABLE: 2,
-    RELIABLE_ORDERED: 3,
-    RELIABLE_SEQUENCED: 4,
-    UNRELIABLE_WITH_ACK_RECEIPT: 5,
-    RELIABLE_WITH_ACK_RECEIPT: 6,
-    RELIABLE_ORDERED_WITH_ACK_RECEIPT: 7
-};
-
-const EPFlags = {
-    RELIABILITY_SHIFT: 5,
-    RELIABILITY_FLAGS: 0b111 << this.RELIABILITY_SHIFT,
-    SPLIT_FLAG: 0b00010000
-};
+const PacketReliability = require("./PacketReliability");
 
 class EncapsulatedPacket {
     initVars(){
         this.reliability = 0;
         this.hasSplit = false;
-        this.length = 0;
+
         this.messageIndex = null;
+
         this.orderIndex = null;
         this.orderChannel = null;
+
         this.splitCount = null;
         this.splitId = null;
         this.splitIndex = null;
-        this.buffer = new ByteBuffer();
+
+        this.stream = new BinaryStream();
+        this.length = 0;
+
+        this.needACK = false;
     }
 
     constructor(){
         this.initVars();
     }
 
-    static fromBinary(buffer, offset){
+    static fromBinary(stream){
         let packet = new EncapsulatedPacket();
 
-        let flags = buffer.readByte();
-        packet.reliability = (flags & EPFlags.RELIABILITY_FLAGS) >> EPFlags.RELIABILITY_SHIFT;
-        packet.hasSplit = (flags & EPFlags.SPLIT_FLAG) > 0;
+        let flags = stream.readByte();
+        packet.reliability = ((flags & 0xe0) >> 5);
+        packet.hasSplit = (flags & 0x10) > 0;
 
-        if(buffer.feof()){
-            return packet;
-        }
-
-        packet.length = buffer.readUint16() / 8;
-
-        if(packet.length === 0){
-            return packet;
-        }
+        packet.length = Math.ceil(stream.readShort(false) / 8);
 
         if(packet.isReliable()){
-            packet.messageIndex = buffer.readLTriad();
+            packet.MessageIndex = stream.readLTriad();
         }
 
-        if(packet.isSequenced()){
-            packet.orderIndex = buffer.readLTriad();
-            packet.orderChannel = buffer.readByte();
+        if(packet.isSequenced()) {
+            packet.OrderIndex = stream.readLTriad();
+            packet.OrderChannel = stream.readByte();
         }
 
         if(packet.hasSplit){
-            packet.splitCount = buffer.readInt32();
-            packet.splitId = buffer.readInt16(); //readShort
-            packet.splitIndex = buffer.readInt32();
+            packet.splitCount = stream.readInt();
+            packet.splitId = stream.readShort(false);
+            packet.splitIndex = stream.readInt();
         }
 
-        packet.buffer = new ByteBuffer().append(buffer.buffer.toString().substr(offset, packet.length));
-
+        packet.stream = new BinaryStream(stream.buffer.slice(stream.offset, stream.offset+packet.length));
+        stream.offset += packet.length;
 
         return packet;
     }
 
-    toBinary(){
-        let buffer = this.getBuffer().toString();
-        let binary = new ByteBuffer();
+    toBinary(returnBuffer = false){
+        let stream = new BinaryStream(256);
 
-        let split = this.hasSplit ? EPFlags.SPLIT_FLAG : 0;
-
-        binary.writeByte((this.reliability << 5) | split);
-
-        binary.writeShort(buffer.length << 3);
+        stream.writeByte((this.reliability << 5) | (this.hasSplit ? 0x10 : 0));
+        stream.writeShort(this.getBuffer().length << 3);
 
         if(this.isReliable()){
-            binary.writeLTriad(this.messageIndex);
+            stream.writeLTriad(this.messageIndex);
         }
 
         if(this.isSequenced()){
-            binary.writeLTriad(this.orderIndex);
-            binary.writeByte(this.orderChannel);
+            stream.writeLTriad(this.orderIndex);
+            stream.writeByte(this.orderChannel);
         }
 
         if(this.hasSplit){
-            binary.writeInt32(this.splitCount);
-            binary.writeInt16(this.splitId);
-            binary.writeInt32(this.splitIndex);
+            stream.writeInt(this.splitCount);
+            stream.writeShort(this.splitId);
+            stream.writeInt(this.splitIndex);
         }
 
-        binary.append(buffer);
+        stream.appendBuffer(this.getBuffer()).compact();
 
-        return binary.buffer.toString();
+        return (returnBuffer === true ? stream.buffer : stream.buffer.toString("hex"));
     }
 
     isReliable(){
-        switch(this.reliability){
-            case PacketReliability.RELIABLE:
-            case PacketReliability.RELIABLE_ORDERED:
-            case PacketReliability.RELIABLE_SEQUENCED:
-            case PacketReliability.RELIABLE_WITH_ACK_RECEIPT:
-            case PacketReliability.RELIABLE_ORDERED_WITH_ACK_RECEIPT:
-                return true;
-            default:
-                return false;
-        }
+        return (
+            this.reliability === PacketReliability.RELIABLE ||
+            this.reliability === PacketReliability.RELIABLE_ORDERED ||
+            this.reliability === PacketReliability.RELIABLE_SEQUENCED ||
+            this.reliability === PacketReliability.RELIABLE_WITH_ACK_RECEIPT ||
+            this.reliability === PacketReliability.RELIABLE_ORDERED_WITH_ACK_RECEIPT
+        );
     }
 
     isSequenced(){
-        switch(this.reliability){
-            case PacketReliability.UNRELIABLE_SEQUENCED:
-            case PacketReliability.RELIABLE_ORDERED:
-            case PacketReliability.RELIABLE_SEQUENCED:
-            case PacketReliability.RELIABLE_ORDERED_WITH_ACK_RECEIPT:
-                return true;
-            default:
-                return false;
-        }
+        return (
+            this.reliability === PacketReliability.UNRELIABLE_SEQUENCED ||
+            this.reliability === PacketReliability.RELIABLE_ORDERED ||
+            this.reliability === PacketReliability.RELIABLE_SEQUENCED ||
+            this.reliability === PacketReliability.RELIABLE_ORDERED_WITH_ACK_RECEIPT
+        );
     }
 
-    getByteBuffer(){
-        return this.buffer;
+    getLength(){
+        return 3 + this.getBuffer().length + (this.messageIndex !== null ? 3 : 0) + (this.orderIndex !== null ? 4 : 0) + (this.hasSplit ? 10 : 0);
+    }
+
+    getStream(){
+        return this.stream;
     }
 
     getBuffer(){
-        return this.getByteBuffer().buffer;
+        return this.getStream().buffer;
     }
 }
 

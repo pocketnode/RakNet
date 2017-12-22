@@ -7,27 +7,26 @@ class OpenConnectionRequest2 extends OfflineMessage {
     }
 
     initVars(){
-        this.clientId = -1;
         this.serverAddress = "";
         this.serverPort = -1;
         this.mtuSize = -1;
+        this.clientId = -1;
     }
 
-    constructor(buffer){
+    constructor(stream){
         super();
         this.initVars();
 
-        this.buffer = buffer;
+        this.stream = stream;
     }
 
-    decode(){
+    decodePayload(){
         this.readMagic();
-        let addr = this.readAddress();
+        let addr = this.getStream().readAddress();
         this.serverAddress = addr.ip;
         this.serverPort = addr.port;
-        this.mtuSize = this.getByteBuffer().readShort();
-        this.clientId = this.getByteBuffer().readLong();
-        this.getByteBuffer().flip();
+        this.mtuSize = this.getStream().readShort();
+        this.clientId = this.getStream().readLong();
     }
 }
 

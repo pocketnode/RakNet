@@ -1,20 +1,13 @@
+const BinaryStream = require("../BinaryStream");
+
 const Packet = require("./Packet");
 const EncapsulatedPacket = require("./EncapsulatedPacket");
-
-const ByteBuffer = require("../ByteBuffer");
-
-const BitFlag = {
-    VALID: 0x80,
-    ACK: 0x40,
-    NAK: 0x20,
-    PACKET_PAIR: 0x10,
-    CONTINUOUS_SEND: 0x08,
-    NEEDS_B_AND_AS: 0x04,
-};
+const BITFLAG = require("./BitFlags");
 
 class Datagram extends Packet {
     initVars(){
-        this.flags = 0;
+        this.headerFlags = 0;
+
         this.packetPair = false;
         this.continuousSend = false;
         this.needsBAndAs = false;
@@ -24,46 +17,55 @@ class Datagram extends Packet {
         this.sequenceNumber = 0;
     }
 
-    constructor(buffer){
-        super();
+    constructor(stream){
+        super(stream);
         this.initVars();
-
-        this.buffer = buffer;
     }
 
-    length(){
+    encodeHeader(){
+        if(this.packetPair === true) this.headerFlags |= BITFLAG.PACKET_PAIR;
+        if(this.continuousSend === true) this.headerFlags |= BITFLAG.CONTINUOUS_SEND;
+        if(this.needsBAndAs === true) this.headerFlags |= BITFLAG.NEEDS_B_AND_AS;
+        this.getStream().writeByte(BITFLAG.VALID | this.headerFlags);
+    }
+
+    encodePayload(){
+        this.getStream().writeLTriad(this.sequenceNumber);
+        this.packets.forEach(packet => {
+            if(packet instanceof EncapsulatedPacket){
+                let buf = packet.toBinary(true);
+                this.getStream().appendBuffer(buf);
+            }else{
+                let buf = Buffer.from(packet, "hex");
+                this.getStream().appendBuffer(buf);
+            }
+        });
+    }
+
+    getLength(){
         let length = 4;
         this.packets.forEach(packet => {
-            length += (packet instanceof EncapsulatedPacket ? packet.getTotalLength() : packet.length);
+            length += (packet instanceof EncapsulatedPacket ? packet.getLength() : Buffer.byteLength(packet, "hex"));
         });
         return length;
     }
 
-    encode(){
-        if(this.packetPair === true) this.flags |= BitFlag.PACKET_PAIR;
-        if(this.continuousSend === true) this.flags |= BitFlag.CONTINUOUS_SEND;
-        if(this.needsBAndAs === true) this.flags |= BitFlag.NEEDS_B_AND_AS;
-
-        this.getByteBuffer().writeByte(BitFlag.VALID | this.flags);
-        this.getByteBuffer().writeLTriad(this.sequenceNumber);
-        this.packets.forEach(packet => {
-            this.getByteBuffer().append(packet.toBinary());
-        });
+    decodeHeader(){
+        this.headerFlags = this.getStream().readByte();
+        this.packetPair     = (this.headerFlags & BITFLAG.PACKET_PAIR) > 0;
+        this.continuousSend = (this.headerFlags & BITFLAG.CONTINUOUS_SEND) > 0;
+        this.needsBAndAs    = (this.headerFlags & BITFLAG.NEEDS_B_AND_AS) > 0;
     }
 
-    decode(){
-        this.flags = this.getByteBuffer().readByte();
+    decodePayload(){
+        this.sequenceNumber = this.getStream().readLTriad();
 
-        this.packetPair = this.flags & BitFlag.PACKET_PAIR !== 0;
-        this.continuousSend = this.flags & BitFlag.CONTINUOUS_SEND !== 0;
-        this.needsBAndAs = this.flags & BitFlag.NEEDS_B_AND_AS !== 0;
+        while(!this.getStream().feof()){
+            let packet = EncapsulatedPacket.fromBinary(this.stream);
 
-        this.sequenceNumber = this.getByteBuffer().readLTriad();
-
-        while(!this.getByteBuffer().feof()){
-            let packet = EncapsulatedPacket.fromBinary(this.getByteBuffer(), this.getByteBuffer().offset);
-
-            if(packet.getBuffer() === "") break;
+            if(packet.getBuffer().toString().replace(new RegExp(String.fromCharCode(0), "g"), "") === ""){
+                break;
+            }
 
             this.packets.push(packet);
         }
