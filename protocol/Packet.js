@@ -9,13 +9,20 @@ class Packet {
         return this.constructor.getId();
     }
 
-    constructor(){
-        this.stream = new BinaryStream(128);
+    constructor(stream){
+        if(stream instanceof BinaryStream){
+            this.stream = stream;
+        }else{
+            this.stream = new BinaryStream(128);
+        }
     }
 
     encode(){
         this.encodeHeader();
         this.encodePayload();
+        if(!this.getStream().feof()){ // if not compact
+            this.getStream().compact();
+        }
     }
 
     encodeHeader(){

@@ -7,11 +7,10 @@ const BITFLAG = require("./BitFlags");
 class Datagram extends Packet {
     initVars(){
         this.headerFlags = 0;
-        this.flags = {
-            packetPair: false,
-            continuousSend: false,
-            needsBAndAs: false
-        };
+
+        this.packetPair = false;
+        this.continuousSend = false;
+        this.needsBAndAs = false;
 
         this.packets = [];
 
@@ -19,54 +18,57 @@ class Datagram extends Packet {
     }
 
     constructor(stream){
-        super();
+        super(stream);
         this.initVars();
-
-        this.stream = stream;
     }
 
     encodeHeader(){
-        if(this.flags.packetPair === true)     this.headerFlags |= BITFLAG.PACKET_PAIR;
-        if(this.flags.continuousSend === true) this.headerFlags |= BITFLAG.CONTINUOUS_SEND;
-        if(this.flags.needsBAndAs === true)    this.headerFlags |= BITFLAG.NEEDS_B_AND_AS;
+        if(this.packetPair === true) this.headerFlags |= BITFLAG.PACKET_PAIR;
+        if(this.continuousSend === true) this.headerFlags |= BITFLAG.CONTINUOUS_SEND;
+        if(this.needsBAndAs === true) this.headerFlags |= BITFLAG.NEEDS_B_AND_AS;
         this.getStream().writeByte(BITFLAG.VALID | this.headerFlags);
     }
 
     encodePayload(){
         this.getStream().writeLTriad(this.sequenceNumber);
         this.packets.forEach(packet => {
-            this.getStream().writeString(packet.toBinary());
+            if(packet instanceof EncapsulatedPacket){
+                let buf = packet.toBinary(true);
+                this.getStream().appendBuffer(buf);
+            }else{
+                let buf = Buffer.from(packet, "hex");
+                this.getStream().appendBuffer(buf);
+            }
         });
     }
 
-    length(){
+    getLength(){
         let length = 4;
         this.packets.forEach(packet => {
-            length += (packet instanceof EncapsulatedPacket ? packet.getTotalLength() : packet.length);
+            length += (packet instanceof EncapsulatedPacket ? packet.getLength() : Buffer.byteLength(packet, "hex"));
         });
         return length;
     }
 
     decodeHeader(){
         this.headerFlags = this.getStream().readByte();
-        this.flags.packetPair     = (this.headerFlags & BITFLAG.PACKET_PAIR) !== 0;
-        this.flags.continuousSend = (this.headerFlags & BITFLAG.CONTINUOUS_SEND) !== 0;
-        this.flags.needsBAndAs    = (this.headerFlags & BITFLAG.NEEDS_B_AND_AS) !== 0;
+        this.packetPair     = (this.headerFlags & BITFLAG.PACKET_PAIR) > 0;
+        this.continuousSend = (this.headerFlags & BITFLAG.CONTINUOUS_SEND) > 0;
+        this.needsBAndAs    = (this.headerFlags & BITFLAG.NEEDS_B_AND_AS) > 0;
     }
 
     decodePayload(){
         this.sequenceNumber = this.getStream().readLTriad();
 
         while(!this.getStream().feof()){
-            let stream = new BinaryStream(this.getBuffer().slice(this.getStream().offset));
-            let data = EncapsulatedPacket.fromBinary(stream);
-            this.getStream().offset += data.offset;
-            if(data.packet.getBuffer().toString() === "") break;
+            let packet = EncapsulatedPacket.fromBinary(this.stream);
 
-            this.packets.push(data.packet);
+            if(packet.getBuffer().toString().replace(new RegExp(String.fromCharCode(0), "g"), "") === ""){
+                break;
+            }
+
+            this.packets.push(packet);
         }
-
-        console.log(this.packets);
     }
 }
 

@@ -21,7 +21,7 @@ class OpenConnectionRequest1 extends OfflineMessage {
     decodePayload(){
         this.readMagic();
         this.protocolVersion = this.getStream().readByte();
-        this.mtuSize = (this.getBuffer().slice(this.getStream().offset)).length + 18;
+        this.mtuSize = this.getBuffer().slice(this.getStream().offset).length + 18;
     }
 }
 
