@@ -1,90 +1,31 @@
 class BinaryStream {
     initVars(){
-        /** @type {Buffer} */
-        this.buffer = Buffer.alloc(0);
-        /** @type {number} */
+        /** @define {Buffer} */
+        this.buffer = Buffer.alloc(32);
         this.offset = 0;
     }
 
-    /**
-     * @param buffer
-     */
     constructor(buffer){
         this.initVars();
 
-        if(buffer instanceof Buffer){
-            this.append(buffer);
-            this.offset = 0;
+        if(buffer && buffer instanceof Buffer){
+            this.buffer = buffer;
+        }else if(typeof buffer === "number") {
+            this.buffer = Buffer.alloc(buffer);
         }
-    }
-
-    reset(){
-        this.buffer = Buffer.alloc(0);
-        this.offset = 0;
-    }
-
-    setBuffer(buffer = Buffer.alloc(0), offset = 0){
-        this.buffer = buffer;
-        this.offset = offset;
-    }
-
-    getOffset(){
-        return this.offset;
-    }
-
-    /**
-     * @return {Buffer}
-     */
-    getBuffer(){
-        return this.buffer;
     }
 
     get length(){
         return this.buffer.length;
     }
 
-    /**
-     * @return {number}
-     */
-    getRemainingBytes(){
-        return this.buffer.length - this.offset;
-    }
-
-    /**
-     * @return {Buffer}
-     */
-    getRemaining(){
-        return this.buffer.slice((this.offset = this.buffer.length));
-    }
-
-    /**
-     * Increases offset
-     * @param v   {number}  Value to increase offset by
-     * @param ret {boolean} Return the new offset
-     * @return {number}
-     */
-    increaseOffset(v, ret = false){
-        return (ret === true ? (this.offset += v) : (this.offset += v) - v);
-    }
-
-    /**
-     * Append data to buffer
-     * @param buf
-     */
-    append(buf){
-        if(buf instanceof Buffer){
-            this.buffer = Buffer.concat([this.buffer, buf]);
-            this.offset += buf.length;
-        }else if(typeof buf === "string"){
-            buf = Buffer.from(buf, "hex");
-            this.buffer = Buffer.concat([this.buffer, buf]);
-            this.offset += buf.length;
-        }
+    increaseOffset(v){
+        return (this.offset += v) - v;
     }
 
     /**
      * Reads a 3-byte big-endian number
-     * @return {number}
+     * @returns {number}
      */
     readTriad(){
         return this.buffer.readUIntBE(this.increaseOffset(3), 3);
@@ -92,20 +33,17 @@ class BinaryStream {
 
     /**
      * Writes a 3-byte big-endian number
-     * @param v {number}
-     * @return {BinaryStream}
+     * @param v
+     * @returns {BinaryStream}
      */
     writeTriad(v){
-        let buf = Buffer.alloc(3);
-        buf.writeUIntBE(v, 0, 3);
-        this.append(buf);
-
+        this.buffer.writeUIntBE(v, this.increaseOffset(3), 3);
         return this;
     }
 
     /**
      * Reads a 3-byte little-endian number
-     * @return {number}
+     * @returns {number}
      */
     readLTriad(){
         return this.buffer.readUIntLE(this.increaseOffset(3), 3);
@@ -113,20 +51,17 @@ class BinaryStream {
 
     /**
      * Writes a 3-byte little-endian number
-     * @param v {number}
-     * @return {BinaryStream}
+     * @param v
+     * @returns {BinaryStream}
      */
     writeLTriad(v){
-        let buf = Buffer.alloc(3);
-        buf.writeUIntLE(v, 0, 3);
-        this.append(buf);
-
+        this.buffer.writeUIntLE(v, this.increaseOffset(3), 3);
         return this;
     }
 
     /**
      * Reads a byte boolean
-     * @return {boolean}
+     * @returns {boolean}
      */
     readBool(){
         return this.readByte() !== 0;
@@ -134,8 +69,8 @@ class BinaryStream {
 
     /**
      * Writes a byte boolean
-     * @param v {boolean}
-     * @return {BinaryStream}
+     * @param v
+     * @returns {BinaryStream}
      */
     writeBool(v){
         this.writeByte(v === true ? 1 : 0);
@@ -144,7 +79,7 @@ class BinaryStream {
 
     /**
      * Reads a unsigned/signed byte
-     * @return {number}
+     * @returns {number}
      */
     readByte(){
         return this.getBuffer()[this.increaseOffset(1)];
@@ -152,252 +87,145 @@ class BinaryStream {
 
     /**
      * Writes a unsigned/signed byte
-     * @param v {number}
+     * @param v
      * @returns {BinaryStream}
      */
     writeByte(v){
-        let buf = Buffer.from([v & 0xff]);
-        this.append(buf);
-
+        this.buffer[this.increaseOffset(1)] = v;
         return this;
     }
 
     /**
      * Reads a 16-bit unsigned or signed big-endian number
-     * @return {number}
+     * @param s
+     * @returns {number}
      */
-    readShort(){
-        return this.buffer.readUInt16BE(this.increaseOffset(2));
+    readShort(s = false){
+        if(s === true){
+            return this.buffer.readInt16BE(this.increaseOffset(2));
+        }else{
+            return this.buffer.readUInt16BE(this.increaseOffset(2));
+        }
     }
 
     /**
-     * Writes a 16-bit unsigned big-endian number
-     * @param v {number}
-     * @return {BinaryStream}
+     * Writes a 16-bit signed/unsigned big-endian number
+     * @param v
+     * @param s
+     * @returns {BinaryStream}
      */
-    writeShort(v){
-        let buf = Buffer.alloc(2);
-        buf.writeUInt16BE(v);
-        this.append(buf);
-
+    writeShort(v, s = false){
+        if(s === true){
+            this.buffer.writeInt16BE(v, this.increaseOffset(2));
+        }else{
+            this.buffer.writeUInt16BE(v, this.increaseOffset(2));
+        }
         return this;
     }
 
     /**
-     * Reads a 16-bit signed big-endian number
-     * @return {number}
+     * Reads a 16-bit signed/unsigned little-endian number
+     * @param s
+     * @returns {number}
      */
-    readSignedShort(){
-        return this.buffer.readInt16BE(this.increaseOffset(2));
+    readLShort(s){
+        if(s === true) {
+            return this.buffer.readInt16LE(this.increaseOffset(2));
+        }else{
+            return this.buffer.readUInt16LE(this.increaseOffset(2));
+        }
     }
 
     /**
-     * Writes a 16-bit signed big-endian number
-     * @param v {number}
-     * @return {BinaryStream}
+     * Writes a 16-bit signed/unsigned little-endian number
+     * @param v
+     * @param s
+     * @returns {BinaryStream}
      */
-    writeSignedShort(v){
-        let buf = Buffer.alloc(2);
-        buf.writeInt16BE(v);
-        this.append(buf);
-
+    writeLShort(v, s = true){
+        if(s === true){
+            this.buffer.writeInt16LE(v, this.increaseOffset(2));
+        }else{
+            this.buffer.writeUInt16LE(v, this.increaseOffset(2));
+        }
         return this;
     }
 
-    /**
-     * Reads a 16-bit unsigned little-endian number
-     * @return {number}
-     */
-    readLShort(){
-        return this.buffer.readUInt16LE(this.increaseOffset(2));
-    }
-
-    /**
-     * Writes a 16-bit unsigned little-endian number
-     * @param v {number}
-     * @return {BinaryStream}
-     */
-    writeLShort(v){
-        let buf = Buffer.alloc(2);
-        buf.writeUInt16BE(v);
-        this.append(buf);
-
-        return this;
-    }
-
-    /**
-     * Reads a 16-bit signed little-endian number
-     * @return {number}
-     */
-    readSignedLShort(){
-        return this.buffer.readInt16LE(this.increaseOffset(2));
-    }
-
-    /**
-     * Writes a 16-bit signed little-endian number
-     * @param v {number}
-     * @return {BinaryStream}
-     */
-    writeSignedLShort(v){
-        let buf = Buffer.alloc(2);
-        buf.writeInt16LE(v);
-        this.append(buf);
-
-        return this;
-    }
-
-    /**
-     * Reads a 32-bit signed big-endian number
-     * @return {number}
-     */
     readInt(){
         return this.buffer.readInt32BE(this.increaseOffset(4));
     }
 
-    /**
-     * Writes a 32-bit signed big-endian number
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeInt(v){
-        let buf = Buffer.alloc(4);
-        buf.writeInt32BE(v);
-        this.append(buf);
-
+        this.buffer.writeInt32BE(v, this.increaseOffset(4));
         return this;
     }
 
-    /**
-     * Reads a 32-bit signed little-endian number
-     * @return {number}
-     */
     readLInt(){
         return this.buffer.readInt32LE(this.increaseOffset(4));
     }
 
-    /**
-     * Writes a 32-bit signed little-endian number
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeLInt(v){
-        let buf = Buffer.alloc(4);
-        buf.writeInt32LE(v);
-        this.append(buf);
-
+        this.buffer.writeInt32LE(v, this.increaseOffset(4));
         return this;
     }
 
-    /**
-     * @return {number}
-     */
     readFloat(){
         return this.buffer.readFloatBE(this.increaseOffset(4));
     }
 
-    /**
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeFloat(v) {
-        let buf = Buffer.alloc(8); // bc you never know *shrug*
-        let bytes = buf.writeFloatBE(v);
-        this.append(buf.slice(0, bytes));
-
+        this.buffer.writeFloatBE(v, this.increaseOffset(4));
         return this;
     }
 
-    /**
-     * @return {number}
-     */
     readLFloat(){
         return this.buffer.readFloatLE(this.increaseOffset(4));
     }
 
-    /**
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeLFloat(v){
-        let buf = Buffer.alloc(8); // bc you never know *shrug*
-        let bytes = buf.writeFloatLE(v);
-        this.append(buf.slice(0, bytes));
-
+        this.buffer.writeFloatLE(v, this.increaseOffset(4));
         return this;
     }
 
-    /**
-     * @return {number}
-     */
     readDouble(){
         return this.buffer.readDoubleBE(this.increaseOffset(8));
     }
 
-    /**
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeDouble(v) {
-        let buf = Buffer.alloc(8);
-        buf.writeDoubleBE(v);
-        this.append(buf);
-
+        this.buffer.writeDoubleBE(v, this.increaseOffset(8));
         return this;
     }
 
-    /**
-     * @return {number}
-     */
     readLDouble(){
         return this.buffer.readDoubleLE(this.increaseOffset(8));
     }
 
-    /**
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeLDouble(v){
-        let buf = Buffer.alloc(8);
-        buf.writeDoubleLE(v);
-        this.append(buf);
-
+        this.buffer.writeDoubleLE(v, this.increaseOffset(8));
         return this;
     }
 
-    /**
-     * @return {number}
-     */
     readLong(){
         return (this.buffer.readUInt32BE(this.increaseOffset(4)) << 8) + this.buffer.readUInt32BE(this.increaseOffset(4));
     }
 
-    /**
-     * @param v {number}
-     * @return {BinaryStream}
-     */
     writeLong(v){
         let MAX_UINT32 = 0xFFFFFFFF;
 
-        let buf = Buffer.alloc(8);
-        buf.writeUInt32BE((~~(v / MAX_UINT32)), 0);
-        buf.writeUInt32BE((v & MAX_UINT32), 4);
-        this.append(buf);
+        this.buffer.writeUInt32BE((~~(v / MAX_UINT32)), this.increaseOffset(4));
+        this.buffer.writeUInt32BE((v & MAX_UINT32), this.increaseOffset(4));
 
         return this;
     }
 
-    /**
-     * Found end of buffer
-     * @return {boolean}
-     */
     feof(){
         return typeof this.getBuffer()[this.offset] === "undefined";
     }
 
-    /**
-     * Reads address from buffer
-     * @return {{ip: string, port: number, version: number}}
-     */
+    getRemainingBytes(){
+        return this.buffer.length - this.offset;
+    }
+
     readAddress(){
         let addr, port;
         let version = this.readByte();
@@ -409,20 +237,13 @@ class BinaryStream {
                     addr.push(this.readByte() & 0xff);
                 }
                 addr = addr.join(".");
-                port = this.readShort();
+                port = this.readShort(false);
                 break;
             // add ipv6 support
         }
         return {ip: addr, port: port, version: version};
     }
 
-    /**
-     * Writes address to buffer
-     * @param addr    {string}
-     * @param port    {number}
-     * @param version {number}
-     * @return {BinaryStream}
-     */
     writeAddress(addr, port, version = 4){
         this.writeByte(version);
         switch(version){
@@ -431,16 +252,27 @@ class BinaryStream {
                 addr.split(".", 4).forEach(b => {
                     this.writeByte((Number(b)) & 0xff);
                 });
-                this.writeShort(port);
+                this.writeShort(port, false);
                 break;
         }
         return this;
     }
 
     writeString(v, encoding = "utf8"){
-        let buf = Buffer.alloc(v.length);
-        buf.write(v, 0, v.length, encoding);
-        this.append(buf);
+        this.buffer.write(v, this.increaseOffset(v.length), v.length, encoding);
+        return this;
+    }
+
+    appendBuffer(buf){
+        if(!(buf instanceof Buffer)) throw new TypeError("Expecting Buffer, got "+buf);
+
+        this.buffer.write(buf.toString("hex"), this.increaseOffset(buf.length), buf.length, "hex");
+
+        return this;
+    }
+
+    compact(){
+        this.buffer = this.buffer.slice(0, this.offset);
         return this;
     }
 
@@ -449,7 +281,12 @@ class BinaryStream {
         return this;
     }
 
-
+    /**
+     * @returns {Buffer}
+     */
+    getBuffer(){
+        return this.buffer;
+    }
 }
 
 module.exports = BinaryStream;
