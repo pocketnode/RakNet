@@ -1,5 +1,4 @@
 const EncapsulatedPacket = require("../../protocol/EncapsulatedPacket");
-const CheckTypes = pocketnode("utils/methods/CheckTypes");
 
 class SplitQueue extends Map {
     add(pk){

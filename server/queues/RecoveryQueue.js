@@ -1,5 +1,4 @@
 const Datagram = require("../../protocol/Datagram");
-const CheckTypes = pocketnode("utils/methods/CheckTypes");
 
 class RecoveryQueue extends Map {
     addRecoveryFor(datagram){
