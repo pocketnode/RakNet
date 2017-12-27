@@ -21,7 +21,7 @@ class OfflineMessageHandler {
         switch(packet.getId()){
             case UnconnectedPing.getId():
                 pk = new UnconnectedPong();
-                pk.serverName = this.sessionManager.getName();
+                pk.serverName = this.sessionManager.getServerName().toString();
                 pk.serverId = this.sessionManager.getId();
                 pk.pingId = packet.pingId;
                 this.sessionManager.sendPacket(pk, address, port);
