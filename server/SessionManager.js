@@ -31,6 +31,8 @@ class SessionManager {
         this.sessions = new Map();
 
         this.offlineMessageHandler = {};
+
+        this._outgoingMessages = [];
     }
 
     constructor(server, socket) {
@@ -100,29 +102,18 @@ class SessionManager {
         return this.server.getId();
     }
 
-    getName(){
-        return {
-            motd: this.server.pocketnode.getMotd(),
-            name: this.server.pocketnode.getName(),
-            protocol: this.server.pocketnode.getProtocol(),
-            version: this.server.pocketnode.getVersion(),
-            players: {
-                online: this.server.pocketnode.getOnlinePlayerCount(),
-                max: this.server.pocketnode.getMaxPlayers()
-            },
-            gamemode: this.server.pocketnode.getGamemodeName(),
-            serverId: this.server.pocketnode.getServerId()
-        };
+    getServerName(){
+        return this.server.getServerName();
     }
 
     sendPacket(packet, address, port){
         packet.encode();
         if(address instanceof Session){
-            this.bytes.sent += this.socket.getSocket().send(packet.getBuffer(), 0, packet.getBuffer().length, address.getPort(), address.getAddress());
-            //this.getLogger().debug("Sent "+packet.constructor.name+"("+packet.stream.buffer.toString("hex")+") to "+address);
+            this.bytes.sent += this.socket.getSocket().send(packet.getStream().getBuffer(), 0, packet.getBuffer().length, address.getPort(), address.getAddress());
+            //this.getLogger().debug("Sent "+protocol.constructor.name+"("+protocol.stream.buffer.toString("hex")+") to "+address);
         }else{
-            this.bytes.sent += this.socket.getSocket().send(packet.getBuffer(), 0, packet.getBuffer().length, port, address);
-            //this.getLogger().debug("Sent "+packet.constructor.name+"("+packet.stream.buffer.toString("hex")+") to "+address+":"+port);
+            this.bytes.sent += this.socket.getSocket().send(packet.getStream().getBuffer(), 0, packet.getBuffer().length, port, address);
+            //this.getLogger().debug("Sent "+protocol.constructor.name+"("+protocol.stream.buffer.toString("hex")+") to "+address+":"+port);
         }
     }
 
@@ -146,6 +137,22 @@ class SessionManager {
     getSession(address, port){
         if(this.sessionExists(address, port)) return this.sessions.get(address + ":" + port);
         else return null;
+    }
+
+    getSessions(){
+        return Array.from(this.sessions.values());
+    }
+
+    openSession(session){
+        this._outgoingMessages.push({
+            purpose: "openSession",
+            data: {
+                identifier: session.toString(),
+                ip: session.getAddress(),
+                port: session.getPort(),
+                clientId: session.clientId
+            }
+        });
     }
 
     handle(packetId, stream, ip, port){
@@ -178,6 +185,12 @@ class SessionManager {
                 }
             }
         }
+    }
+
+    readOutgoingMessages(){
+        let tmp = this._outgoingMessages;
+        this._outgoingMessages = [];
+        return tmp;
     }
 }
 
