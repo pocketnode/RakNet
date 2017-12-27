@@ -21,6 +21,7 @@ const RecoveryQueue = require("./queues/RecoveryQueue");
 const ACKQueue = require("./queues/ACKQueue");
 const NACKQueue = require("./queues/NACKQueue");
 const SplitQueue = require("./queues/SplitQueue");
+const PacketBatchHolder = require("./queues/PacketBatchHolder");
 
 const MessageIdentifiers = require("../protocol/MessageIdentifiers");
 
@@ -69,6 +70,7 @@ class Session {
         this.ACKQueue = new ACKQueue();
         this.NACKQueue = new NACKQueue();
         this.splitQueue = new SplitQueue();
+        this.packetBatches = new PacketBatchHolder();
 
         this.lastPingMeasure = 1;
     }
@@ -88,7 +90,7 @@ class Session {
     }
 
     setSendQueue(){
-        this._sendQueue = new Datagram(new BinaryStream(this.mtuSize));
+        this._sendQueue = new Datagram();
         this._sendQueue.needsBAndAs = true;
     }
 
@@ -188,7 +190,7 @@ class Session {
         this.lastUpdate = Date.now();
 
         if(packet instanceof Datagram || packet instanceof ACK || packet instanceof NACK){
-            //this.sessionManager.getLogger().debug("Got " + packet.constructor.name + "(" + packet.stream.buffer.toString("hex") + ") from " + this);
+            //this.sessionManager.getLogger().debug("Got " + protocol.constructor.name + "(" + protocol.stream.buffer.toString("hex") + ") from " + this);
         }
 
         if(packet instanceof Datagram){
@@ -231,7 +233,7 @@ class Session {
     handleEncapsulatedPacket(packet){
         if(!(packet instanceof EncapsulatedPacket)) throw new TypeError("Expecting EncapsulatedPacket, got "+(packet.constructor.name ? packet.constructor.name : packet));
 
-        //this.sessionManager.getLogger().debug("Handling EncapsulatedPacket("+packet.getBuffer().toString("hex")+")["+packet.getBuffer().length+"] from "+this);
+        //this.sessionManager.getLogger().debug("Handling EncapsulatedPacket("+protocol.getBuffer().toString("hex")+")["+protocol.getBuffer().length+"] from "+this);
 
         if(packet.hasSplit){
             if(this.isConnected()) this.handleSplitPacket(packet);
@@ -264,7 +266,8 @@ class Session {
 
                 if(true || dpk.port === this.sessionManager.getPort()){//todo: if port checking
                     this.setConnected();
-                    //tell pocketnode: hey new player!
+
+                    this.sessionManager.openSession(this);
 
                     this.sendPing();
                 }
@@ -292,11 +295,13 @@ class Session {
                 break;
 
             case MessageIdentifiers.MINECRAFT_HEADER:
-                this.sessionManager.getLogger().debug("Got a Minecraft packet.");
+                this.packetBatches.add(packet);
+                this.sessionManager.getLogger().debug("Got a Minecraft protocol.");
                 break;
 
             default:
-                this.sessionManager.getLogger().debug("Got unknown packet: ", id);
+                this.packetBatches.add(packet);
+                this.sessionManager.getLogger().debug("Got unknown protocol: ", id);
                 break;
         }
     }
@@ -317,16 +322,15 @@ class Session {
 
         if(this.splitQueue.getSplitSize(packet.splitId) === packet.splitCount){
             let pk = new EncapsulatedPacket();
-            let stream = new BinaryStream(1024 * 1024);
+            let stream = new BinaryStream();
             let packets = this.splitQueue.getSplits(packet.splitId);
             for(let [splitIndex, packet] of packets){
-                stream.appendBuffer(packet.getBuffer());
+                stream.append(packet.getBuffer());
             }
             this.splitQueue.remove(packet.splitId);
 
-            pk.stream = stream.compact();
+            pk.stream = stream.flip();
             pk.length = stream.offset;
-            stream.flip();
 
             this.handleEncapsulatedPacket(pk);
         }
@@ -367,7 +371,7 @@ class Session {
         pk.orderChannel = orderChannel;
         pk.stream = new BinaryStream(packet.getBuffer());
 
-        //this.sessionManager.getLogger().debug("Queuing "+packet.constructor.name+"("+packet.getBuffer().toString("hex")+")");
+        //this.sessionManager.getLogger().debug("Queuing "+protocol.constructor.name+"("+protocol.getBuffer().toString("hex")+")");
 
         this.addEncapsulatedToQueue(pk, flags);
     }
@@ -390,7 +394,7 @@ class Session {
             let splitIndex = 0;
             let splitCount = Math.ceil(packet.getBuffer().length / maxSize);
             while(!packet.getStream().feof()){
-                let stream = packet.getBuffer().slice(packet.getStream().offset, packet.getStream().offset+=maxSize);
+                let stream = packet.getBuffer().slice(packet.getStream().offset, packet.getStream().offset += maxSize);
                 let pk = new EncapsulatedPacket();
                 pk.splitId = splitId;
                 pk.hasSplit = true;
@@ -399,9 +403,9 @@ class Session {
                 pk.splitIndex = splitIndex;
                 pk.stream = stream;
 
-                if(splitIndex > 0){
+                if (splitIndex > 0) {
                     pk.messageIndex = this.messageIndex++;
-                }else{
+                } else {
                     pk.messageIndex = packet.messageIndex;
                 }
 
@@ -411,31 +415,6 @@ class Session {
                 this.addToQueue(pk, flags | RakNet.PRIORITY_IMMEDIATE);
                 splitIndex++;
             }
-
-
-            /*let buffers = str_split(packet.getBuffer().toString("hex"), maxSize*2);
-
-            let splitId = ++this.splitId % 65536;
-            buffers.forEach((hex, count) => {
-                let stream = new BinaryStream(Buffer.from(hex, "hex"));
-                let pk = new EncapsulatedPacket();
-                pk.splitId = splitId;
-                pk.hasSplit = true;
-                pk.splitCount = buffers.length;
-                pk.reliability = packet.reliability;
-                pk.splitIndex = count;
-                pk.stream = stream;
-                if(count > 0){
-                    pk.messageIndex = this.messageIndex++;
-                }else{
-                    pk.messageIndex = packet.messageIndex;
-                }
-
-                pk.orderChannel = packet.orderChannel;
-                pk.orderIndex = packet.orderIndex;
-
-                this.addToQueue(pk, flags | RakNet.PRIORITY_IMMEDIATE);
-            });*/
         }else{
             this.addToQueue(packet, flags);
         }
