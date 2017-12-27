@@ -1,31 +1,36 @@
 const UDPServerSocket = require("./UDPServerSocket");
 const PacketPool = require("./PacketPool");
+const ServerName = require("./ServerName");
 
 class RakNetServer {
     initVars(){
-        this.pocketnode = {};
         this.port = -1;
         this.logger = {};
         this.serverId = -1;
         this.server = {};
+        this.serverName = new ServerName();
         this.packetPool = new PacketPool();
     }
 
-    constructor(server, logger){
+    constructor(port, logger){
         this.initVars();
 
-        if(server.getPort() < 1 || server.getPort() > 65536){
+        if(port < 1 || port > 65536){
             throw new Error("Invalid port range");
         }
 
-        this.pocketnode = server;
-
-        this.port = this.pocketnode.getPort();
+        this.port = port;
         this.logger = logger;
 
-        this.serverId = this.pocketnode.getServerId();
+        this.server = new UDPServerSocket(this, port, logger);
+    }
 
-        this.server = new UDPServerSocket(this, this.getPort(), this.getLogger());
+    shutdown(){
+        this.server.close();
+    }
+
+    getServerName(){
+        return this.serverName;
     }
 
     getPort(){
@@ -37,7 +42,11 @@ class RakNetServer {
     }
 
     getId(){
-        return this.serverId;
+        return this.getServerName().getServerId();
+    }
+
+    getSessionManager(){
+        return this.server.sessionManager;
     }
 
     getPacketPool(){
