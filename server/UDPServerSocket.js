@@ -26,6 +26,7 @@ class UDPServerSocket {
 
     close(){
         this.socket.close();
+        this.sessionManager.shutdown();
     }
 
     setListeners(){
@@ -44,10 +45,6 @@ class UDPServerSocket {
             //this.logger.debug("Received", packetId, "with length of", msg.length, "from", rinfo.address + ":" + rinfo.port);
 
             this.sessionManager.handle(packetId, stream, rinfo.address, rinfo.port);
-        });
-
-        this.socket.on("close", () => {
-            this.sessionManager.shutdown();
         });
     }
 }
