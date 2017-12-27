@@ -3,8 +3,8 @@ const Packet = require("./Packet");
 const BinaryStream = require("../BinaryStream");
 
 class AcknowledgementPacket extends Packet {
-    constructor(){
-        super();
+    constructor(stream){
+        super(stream);
         this.packets = [];
     }
 
@@ -47,19 +47,16 @@ class AcknowledgementPacket extends Packet {
                     .writeLTriad(start);
             }else{
                 payload
-                    .writeByte(false)
+                    .writeBool(false)
                     .writeLTriad(start)
                     .writeLTriad(last);
             }
             records++;
         }
 
-        payload.compact();
-
         this.getStream()
-            .writeShort(records, false)
-            .appendBuffer(payload.getBuffer())
-            .compact();
+            .writeShort(records)
+            .append(payload.getBuffer());
     }
 
     decodePayload(){

@@ -13,16 +13,13 @@ class Packet {
         if(stream instanceof BinaryStream){
             this.stream = stream;
         }else{
-            this.stream = new BinaryStream(128);
+            this.stream = new BinaryStream();
         }
     }
 
     encode(){
         this.encodeHeader();
         this.encodePayload();
-        if(!this.getStream().feof()){ // if not compact
-            this.getStream().compact();
-        }
     }
 
     encodeHeader(){
@@ -49,7 +46,7 @@ class Packet {
     }
 
     getBuffer(){
-        return this.getStream().getBuffer();
+        return this.stream.buffer;
     }
 }
 

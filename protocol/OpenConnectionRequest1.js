@@ -12,16 +12,14 @@ class OpenConnectionRequest1 extends OfflineMessage {
     }
 
     constructor(stream){
-        super();
+        super(stream);
         this.initVars();
-
-        this.stream = stream;
     }
 
     decodePayload(){
         this.readMagic();
         this.protocolVersion = this.getStream().readByte();
-        this.mtuSize = this.getBuffer().slice(this.getStream().offset).length + 18;
+        this.mtuSize = this.getBuffer().slice(this.getStream().getOffset()).length + 18;
     }
 }
 

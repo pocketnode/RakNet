@@ -21,8 +21,7 @@ class ConnectionRequest extends Packet {
         this.getStream()
             .writeLong(this.clientId)
             .writeLong(this.sendPingTime)
-            .writeBool(this.useSecurity)
-            .compact();
+            .writeBool(this.useSecurity);
     }
 
     decodePayload(){

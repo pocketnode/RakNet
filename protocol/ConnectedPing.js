@@ -6,15 +6,14 @@ class ConnectedPing extends Packet {
         return MessageIdentifiers.ID_CONNECTED_PING;
     }
 
-    constructor(){
-        super();
+    constructor(stream){
+        super(stream);
         this.sendPingTime = -1;
     }
 
     encodePayload(){
         this.getStream()
-            .writeLong(this.sendPingTime)
-            .compact();
+            .writeLong(this.sendPingTime);
     }
 
     decodePayload(){

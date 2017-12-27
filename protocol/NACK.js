@@ -6,8 +6,7 @@ class NACK extends AcknowledgementPacket {
     }
 
     constructor(stream){
-        super();
-        if(stream) this.stream = stream;
+        super(stream);
     }
 }
 

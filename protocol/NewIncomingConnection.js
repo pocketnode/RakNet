@@ -1,6 +1,5 @@
 const Packet = require("./Packet");
 const MessageIdentifiers = require("./MessageIdentifiers");
-const RakNet = require("../RakNet");
 
 class NewIncomingConnection extends Packet {
     static getId(){
@@ -18,10 +17,8 @@ class NewIncomingConnection extends Packet {
     }
 
     constructor(stream){
-        super();
+        super(stream);
         this.initVars();
-
-        this.stream = stream;
     }
 
     encodePayload(){}
@@ -32,7 +29,7 @@ class NewIncomingConnection extends Packet {
         this.port = addr.port;
 
         let stopOffset = this.getBuffer().length - 16;
-        for(let i = 0; i < RakNet.SYSTEM_ADDRESS_COUNT; ++i){
+        for(let i = 0; i < 20; ++i){
             if(this.getStream().offset >= stopOffset){
                 this.systemAddresses.push(["0.0.0.0", 0, 4]);
             }else{

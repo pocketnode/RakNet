@@ -11,10 +11,8 @@ class UnconnectedPing extends OfflineMessage {
     }
 
     constructor(stream){
-        super();
+        super(stream);
         this.initVars();
-
-        this.stream = stream;
     }
 
     decodePayload(){

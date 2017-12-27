@@ -7,7 +7,7 @@ class UnconnectedPong extends OfflineMessage {
     }
 
     initVars() {
-        this.serverName = {};
+        this.serverName = "";
         this.serverId = -1;
         this.pingId = -1;
     }
@@ -19,18 +19,6 @@ class UnconnectedPong extends OfflineMessage {
     }
     
     encodePayload(){
-        let name = [
-            "MCPE",
-            this.serverName.name,
-            this.serverName.protocol,
-            this.serverName.version,
-            this.serverName.players.online,
-            this.serverName.players.max,
-            this.serverName.serverId,
-            this.serverName.motd,
-            this.serverName.gamemode
-        ].join(";");
-
         this.getStream()
             .writeLong(this.pingId)
             .writeLong(this.serverId);
@@ -38,9 +26,8 @@ class UnconnectedPong extends OfflineMessage {
         this.writeMagic();
 
         this.getStream()
-            .writeShort(name.length)
-            .writeString(name)
-            .compact();
+            .writeShort(this.serverName.length)
+            .writeString(this.serverName);
     }
 }
 

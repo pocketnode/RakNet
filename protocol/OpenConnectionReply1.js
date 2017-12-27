@@ -22,8 +22,7 @@ class OpenConnectionReply1 extends OfflineMessage {
         this.getStream()
             .writeLong(this.serverId)
             .writeBool(this.serverSecurity)
-            .writeShort(this.mtuSize)
-            .compact();
+            .writeShort(this.mtuSize);
     }
 }
 

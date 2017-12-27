@@ -33,7 +33,7 @@ class EncapsulatedPacket {
         packet.reliability = ((flags & 0xe0) >> 5);
         packet.hasSplit = (flags & 0x10) > 0;
 
-        packet.length = Math.ceil(stream.readShort(false) / 8);
+        packet.length = Math.ceil(stream.readShort() / 8);
 
         if(packet.isReliable()){
             packet.MessageIndex = stream.readLTriad();
@@ -46,7 +46,7 @@ class EncapsulatedPacket {
 
         if(packet.hasSplit){
             packet.splitCount = stream.readInt();
-            packet.splitId = stream.readShort(false);
+            packet.splitId = stream.readShort();
             packet.splitIndex = stream.readInt();
         }
 
@@ -56,8 +56,8 @@ class EncapsulatedPacket {
         return packet;
     }
 
-    toBinary(returnBuffer = false){
-        let stream = new BinaryStream(256);
+    toBinary(){
+        let stream = new BinaryStream();
 
         stream.writeByte((this.reliability << 5) | (this.hasSplit ? 0x10 : 0));
         stream.writeShort(this.getBuffer().length << 3);
@@ -77,9 +77,9 @@ class EncapsulatedPacket {
             stream.writeInt(this.splitIndex);
         }
 
-        stream.appendBuffer(this.getBuffer()).compact();
+        stream.append(this.getBuffer());
 
-        return (returnBuffer === true ? stream.buffer : stream.buffer.toString("hex"));
+        return stream.buffer.toString("hex");
     }
 
     isReliable(){
@@ -110,7 +110,7 @@ class EncapsulatedPacket {
     }
 
     getBuffer(){
-        return this.getStream().buffer;
+        return this.stream.buffer;
     }
 }
 

@@ -19,8 +19,7 @@ class ConnectedPong extends Packet {
     encodePayload(){
         this.getStream()
             .writeLong(this.sendPingTime)
-            .writeLong(this.sendPongTime)
-            .compact();
+            .writeLong(this.sendPongTime);
     }
 
     decodePayload(){

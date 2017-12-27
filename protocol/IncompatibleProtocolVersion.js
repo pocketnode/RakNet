@@ -22,7 +22,6 @@ class IncompatibleProtocolVersion extends OfflineMessage {
         this.writeMagic();
 
         this.getStream().writeLong(this.serverId);
-        this.getStream().compact();
     }
 }
 

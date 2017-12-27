@@ -1,5 +1,3 @@
-const BinaryStream = require("../BinaryStream");
-
 const Packet = require("./Packet");
 const EncapsulatedPacket = require("./EncapsulatedPacket");
 const BITFLAG = require("./BitFlags");
@@ -30,16 +28,8 @@ class Datagram extends Packet {
     }
 
     encodePayload(){
-        this.getStream().writeLTriad(this.sequenceNumber);
-        this.packets.forEach(packet => {
-            if(packet instanceof EncapsulatedPacket){
-                let buf = packet.toBinary(true);
-                this.getStream().appendBuffer(buf);
-            }else{
-                let buf = Buffer.from(packet, "hex");
-                this.getStream().appendBuffer(buf);
-            }
-        });
+        this.getStream().writeLTriad(this.sequenceNumber); // all of a sudden sequence num started being a string
+        this.packets.forEach(packet => this.getStream().append(packet));
     }
 
     getLength(){
@@ -63,7 +53,7 @@ class Datagram extends Packet {
         while(!this.getStream().feof()){
             let packet = EncapsulatedPacket.fromBinary(this.stream);
 
-            if(packet.getBuffer().toString().replace(new RegExp(String.fromCharCode(0), "g"), "") === ""){
+            if(packet.getStream().length === 0){
                 break;
             }
 

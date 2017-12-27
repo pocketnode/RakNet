@@ -1,8 +1,5 @@
 const Packet = require("./Packet");
 const MessageIdentifiers = require("./MessageIdentifiers");
-const RakNet = require("../RakNet");
-
-const BinaryStream = require("../BinaryStream");
 
 class ConnectionRequestAccepted extends Packet {
     static getId(){
@@ -22,7 +19,6 @@ class ConnectionRequestAccepted extends Packet {
     constructor(){
         super();
         this.initVars();
-        this.stream = new BinaryStream(256);
     }
 
     encodePayload(){
@@ -37,8 +33,7 @@ class ConnectionRequestAccepted extends Packet {
 
         this.getStream()
             .writeLong(this.sendPingTime)
-            .writeLong(this.sendPongTime)
-            .compact();
+            .writeLong(this.sendPongTime);
     }
 }
 
