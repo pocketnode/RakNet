@@ -139,6 +139,10 @@ class SessionManager {
         else return null;
     }
 
+    getSessionByIdentifier(identifier){
+        return this.sessions.get(identifier);
+    }
+
     getSessions(){
         return Array.from(this.sessions.values());
     }

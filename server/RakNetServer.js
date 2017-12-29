@@ -1,3 +1,9 @@
+const Path = require("path");
+
+global.raknet = function(path){
+    return require(Path.normalize(__dirname + "/../" + path));
+};
+
 const UDPServerSocket = require("./UDPServerSocket");
 const PacketPool = require("./PacketPool");
 const ServerName = require("./ServerName");

@@ -296,12 +296,12 @@ class Session {
 
             case MessageIdentifiers.MINECRAFT_HEADER:
                 this.packetBatches.add(packet);
-                this.sessionManager.getLogger().debug("Got a Minecraft protocol.");
+                this.sessionManager.getLogger().debug("Got a Minecraft packet");
                 break;
 
             default:
                 this.packetBatches.add(packet);
-                this.sessionManager.getLogger().debug("Got unknown protocol: ", id);
+                this.sessionManager.getLogger().debug("Got unknown packet: ", id);
                 break;
         }
     }
