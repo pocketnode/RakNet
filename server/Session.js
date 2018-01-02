@@ -363,7 +363,6 @@ class Session {
     }
 
     queueConnectedPacket(packet, reliability, orderChannel, flags = RakNet.PRIORITY_NORMAL){
-        if(!(packet instanceof Packet)) throw new TypeError("Expecting Packet, got "+(packet.constructor.name ? packet.constructor.name : packet));
         packet.encode();
 
         let pk = new EncapsulatedPacket();
