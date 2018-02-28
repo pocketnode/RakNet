@@ -2,24 +2,24 @@ const UnconnectedPing = require("../protocol/UnconnectedPing");
 const OpenConnectionRequest1 = require("../protocol/OpenConnectionRequest1");
 const OpenConnectionRequest2 = require("../protocol/OpenConnectionRequest2");
 
-class PacketPool {
+class PacketPool extends Map {
     constructor(){
-        this.packetPool = new Map();
+        super();
         this.registerPackets();
     }
 
-    registerPacket(id, classConstructor){
-        this.packetPool.set(id, classConstructor);
+    registerPacket(packet){
+        this.set(packet.getId(), packet);
     }
 
     getPacket(id){
-        return this.packetPool.has(id) ? this.packetPool.get(id) : null;
+        return this.has(id) ? this.get(id) : null;
     }
 
     registerPackets(){
-        this.registerPacket(UnconnectedPing.getId(), UnconnectedPing);
-        this.registerPacket(OpenConnectionRequest1.getId(), OpenConnectionRequest1);
-        this.registerPacket(OpenConnectionRequest2.getId(), OpenConnectionRequest2);
+        this.registerPacket(UnconnectedPing);
+        this.registerPacket(OpenConnectionRequest1);
+        this.registerPacket(OpenConnectionRequest2);
     }
 }
 

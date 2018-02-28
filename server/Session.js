@@ -1,7 +1,7 @@
 const Packet = require("../protocol/Packet");
 
 const RakNet = require("../RakNet");
-const BinaryStream = require("../BinaryStream");
+const BinaryStream = require("pocketnode-binarystream");
 
 const Datagram = require("../protocol/Datagram");
 const EncapsulatedPacket = require("../protocol/EncapsulatedPacket");
@@ -25,14 +25,12 @@ const PacketBatchHolder = require("./queues/PacketBatchHolder");
 
 const MessageIdentifiers = require("../protocol/MessageIdentifiers");
 
-const SessionState = {
-    CONNECTING: 0,
-    CONNECTED: 1,
-    DISCONNECTING: 2,
-    DISCONNECTED: 3
-};
-
 class Session {
+    static get STATE_CONNECTING(){return 0}
+    static get STATE_CONNECTED(){return 1}
+    static get STATE_DISCONNECTING(){return 2}
+    static get STATE_DISCONNECTED(){return 3}
+
     get MAX_SPLIT_SIZE(){
         return 128;
     }
@@ -46,7 +44,7 @@ class Session {
 
         this.address = "";
         this.port = -1;
-        this.state = SessionState.CONNECTING;
+        this.state = Session.STATE_CONNECTING;
         this.mtuSize = -1;
         this.clientId = -1;
 
@@ -107,15 +105,15 @@ class Session {
     }
 
     isConnecting(){
-        return this.state === SessionState.CONNECTING;
+        return this.state === Session.STATE_CONNECTING;
     }
 
     isConnected(){
-        return this.state !== SessionState.DISCONNECTING && this.state !== SessionState.DISCONNECTED;
+        return this.state !== Session.STATE_DISCONNECTING && this.state !== Session.STATE_DISCONNECTED;
     }
 
     setConnected(){
-        this.state = SessionState.CONNECTED;
+        this.state = Session.STATE_CONNECTED;
         this.lastUpdate = Date.now();
         this.sessionManager.getLogger().debug(this+" is now connected.");
     }
@@ -126,7 +124,7 @@ class Session {
             return;
         }
 
-        if(this.state === SessionState.DISCONNECTING && (
+        if(this.state === Session.STATE_DISCONNECTING && (
             (this.ACKQueue.isEmpty() && this.NACKQueue.isEmpty() && this.packetsToSend.length === 0 && this.recoveryQueue.isEmpty()) &&
             this.disconnectionTime + 10 < time)
         ){
@@ -172,11 +170,13 @@ class Session {
 
 
     close(){
-        if(this.state !== SessionState.DISCONNECTED){
-            this.state = SessionState.DISCONNECTED;
+        if(this.state !== Session.STATE_DISCONNECTED){
+            this.state = Session.STATE_DISCONNECTED;
 
-            this.sessionManager.getLogger().debug("Closed session for "+this);
-            //close player in pocketnode
+            this.queueConnectedPacket(new DisconnectionNotification(), PacketReliability.RELIABLE_ORDERED, 0, RakNet.PRIORITY_IMMEDIATE);
+
+            this.sessionManager.getLogger().debug(`Closed session for ${this.toString()}`);
+            this.sessionManager.removeSessionInternal(this);
             this.sessionManager = null;
         }
     }

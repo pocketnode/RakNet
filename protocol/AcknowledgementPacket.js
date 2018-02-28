@@ -1,6 +1,6 @@
 const Packet = require("./Packet");
 
-const BinaryStream = require("../BinaryStream");
+const BinaryStream = require("pocketnode-binarystream");
 
 class AcknowledgementPacket extends Packet {
     constructor(stream){

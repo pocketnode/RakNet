@@ -1,6 +1,6 @@
 {
   "name": "raknet",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "raknet implementation in node.js",
   "main": "server/RakNetServer.js",
   "scripts": {
@@ -17,11 +17,7 @@
   ],
   "author": "eDroid",
   "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/PocketNode/RakNet/issues"
-  },
-  "homepage": "https://github.com/PocketNode/RakNet#readme",
   "dependencies": {
-    "dgram": "^1.0.1"
+    "pocketnode-binarystream": "git+https://github.com/PocketNode/PocketNode-BinaryStream.git"
   }
 }

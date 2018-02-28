@@ -1,4 +1,4 @@
-const BinaryStream = require("../BinaryStream");
+const BinaryStream = require("pocketnode-binarystream");
 
 class Packet {
     static getId(){

@@ -5,17 +5,22 @@ global.raknet = function(path){
 };
 
 const UDPServerSocket = require("./UDPServerSocket");
+const SessionManager = require("./SessionManager");
 const PacketPool = require("./PacketPool");
 const ServerName = require("./ServerName");
 
 class RakNetServer {
     initVars(){
-        this.port = -1;
-        this.logger = {};
-        this.serverId = -1;
-        this.server = {};
-        this.serverName = new ServerName();
-        this.packetPool = new PacketPool();
+        this._port = -1;
+        this._logger = null;
+
+        this._shutdown = false;
+
+        this._server = null;
+        this._sessionManager = null;
+
+        this._serverName = new ServerName();
+        this._packetPool = new PacketPool();
     }
 
     constructor(port, logger){
@@ -25,26 +30,31 @@ class RakNetServer {
             throw new Error("Invalid port range");
         }
 
-        this.port = port;
-        this.logger = logger;
+        this._port = port;
+        this._logger = logger;
 
-        this.server = new UDPServerSocket(this, port, logger);
+        this._server = new UDPServerSocket(port, logger);
+        this._sessionManager = new SessionManager(this, this._server);
+    }
+
+    isShutdown(){
+        return this._shutdown === true;
     }
 
     shutdown(){
-        this.server.close();
-    }
-
-    getServerName(){
-        return this.serverName;
+        this._shutdown = true;
     }
 
     getPort(){
-        return this.port;
+        return this._port;
+    }
+
+    getServerName(){
+        return this._serverName;
     }
 
     getLogger(){
-        return this.logger;
+        return this._logger;
     }
 
     getId(){
@@ -52,11 +62,11 @@ class RakNetServer {
     }
 
     getSessionManager(){
-        return this.server.sessionManager;
+        return this._sessionManager;
     }
 
     getPacketPool(){
-        return this.packetPool;
+        return this._packetPool;
     }
 }
 
