@@ -375,6 +375,10 @@ class Session {
         this.addEncapsulatedToQueue(pk, flags);
     }
 
+    queueConnectedPacketFromServer(packet, needACK, immediate){
+        return this.queueConnectedPacket(packet, (needACK === true ? RakNet.FLAG_NEED_ACK : 0) | (immediate === true ? RakNet.PRIORITY_IMMEDIATE : RakNet.PRIORITY_NORMAL));
+    }
+
     addEncapsulatedToQueue(packet, flags){
         if(!(packet instanceof EncapsulatedPacket)) throw new TypeError("Expecting EncapsulatedPacket, got "+(packet.constructor.name ? packet.constructor.name : packet));
 
